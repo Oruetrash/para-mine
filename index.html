@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Para Miñe 💖</title>
+  <meta name="theme-color" content="#ff4d6d" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💖</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+</head>
+<body>
+  <div id="hearts-bg"></div>
+
+  <!-- PANTALLA DE INGRESO (clave) -->
+  <section id="login-screen" class="screen active">
+    <div class="login-card">
+      <div class="login-heart">💘</div>
+      <h1 class="script">Para Miñe</h1>
+      <p class="login-sub">Un regalo hecho con amor, solo para vos</p>
+      <form id="login-form">
+        <input type="password" id="password-input" inputmode="numeric" autocomplete="current-password" placeholder="Ingresá la clave" maxlength="20" />
+        <button type="submit" id="login-btn">Abrir mi regalo 💝</button>
+      </form>
+      <p id="login-error" class="login-error"></p>
+    </div>
+  </section>
+
+  <!-- APP PRINCIPAL -->
+  <div id="app" class="hidden">
+    <nav id="nav">
+      <button class="nav-btn active" data-view="portada">💝</button>
+      <button class="nav-btn" data-view="historia">📖</button>
+      <button class="nav-btn" data-view="canciones">🎵</button>
+      <button class="nav-btn" data-view="album">📒</button>
+      <button class="nav-btn" data-view="cofre">🎁</button>
+    </nav>
+
+    <!-- PORTADA -->
+    <section id="view-portada" class="view active">
+      <div class="portada">
+        <p class="saludo" id="saludo">Hola,</p>
+        <h1 class="script portada-nombre">Miñe</h1>
+        <p class="portada-sub">Esto es para vos, porque te merecés el mundo.</p>
+        <div class="countdown-card">
+          <p class="countdown-label">Falta para tu cumple</p>
+          <div class="countdown" id="countdown">
+            <div class="cd-box"><span id="cd-dias">--</span><label>días</label></div>
+            <div class="cd-box"><span id="cd-horas">--</span><label>horas</label></div>
+            <div class="cd-box"><span id="cd-min">--</span><label>min</label></div>
+            <div class="cd-box"><span id="cd-seg">--</span><label>seg</label></div>
+          </div>
+          <p class="countdown-hint" id="countdown-hint"></p>
+        </div>
+        <button class="cta" data-go="historia">Ver nuestra historia 💌</button>
+        <button class="cta cta-alt" data-go="cofre">Hay algo para vos 🎁</button>
+      </div>
+    </section>
+
+    <!-- HISTORIA -->
+    <section id="view-historia" class="view">
+      <h2 class="section-title script">Nuestra historia</h2>
+      <p class="section-sub">Cada capítulo nos trajo hasta acá.</p>
+      <div class="timeline" id="timeline"></div>
+    </section>
+
+    <!-- CANCIONES -->
+    <section id="view-canciones" class="view">
+      <h2 class="section-title script">Nuestras canciones</h2>
+      <p class="section-sub">Tocá play y acordate de nosotros.</p>
+      <div id="canciones"></div>
+    </section>
+
+    <!-- ÁLBUM -->
+    <section id="view-album" class="view">
+      <h2 class="section-title script">Nuestro álbum</h2>
+      <p class="section-sub">Mes a mes, la historia que contamos juntos.</p>
+      <div class="album-legend">
+        <span><i class="dot d1"></i> Nosotros</span>
+        <span><i class="dot d2"></i> Ella</span>
+        <span><i class="dot d3"></i> Falta porque…</span>
+      </div>
+      <div id="album"></div>
+      <p class="album-footer">➕ Podés subir fotos y marcar por qué falta alguna. Es de los dos.</p>
+    </section>
+
+    <!-- COFRE -->
+    <section id="view-cofre" class="view">
+      <h2 class="section-title script">Para Miñe</h2>
+      <p class="section-sub">Un cofre guardado con todo mi amor.</p>
+      <div id="cofre"></div>
+    </section>
+  </div>
+
+  <!-- Lightbox para fotos -->
+  <div id="lightbox" class="lightbox hidden">
+    <div class="lightbox-inner">
+      <span class="lightbox-close">✕</span>
+      <img id="lightbox-img" src="" alt="foto" />
+    </div>
+  </div>
+
+  <!-- Modal para nota "falta porque" -->
+  <div id="note-modal" class="modal hidden">
+    <div class="modal-card">
+      <h3 id="note-modal-title">¿Por qué falta esta foto?</h3>
+      <textarea id="note-text" rows="4" placeholder="Ej: este mes no nos vimos, estaba de viaje, fue una pausa…"></textarea>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="note-cancel">Cancelar</button>
+        <button class="btn-solid" id="note-save">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para subir foto -->
+  <div id="upload-modal" class="modal hidden">
+    <div class="modal-card">
+      <h3>Subir foto</h3>
+      <p id="upload-slot-label" class="upload-label"></p>
+      <input type="file" id="upload-input" accept="image/*,video/*" />
+      <p class="upload-hint">Fotos: JPG/PNG. Si es de iPhone (.heic), convertila a JPG primero.</p>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="upload-cancel">Cancelar</button>
+        <button class="btn-solid" id="upload-do">Subir</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

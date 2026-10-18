@@ -1,0 +1,17 @@
+{
+  "name": "regalomili",
+  "version": "1.0.0",
+  "private": true,
+  "description": "App romántica para Miñe",
+  "scripts": {
+    "serve": "npx serve .",
+    "convert": "node scripts/convert.js",
+    "upload": "node scripts/upload.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "heic-convert": "^2.1.0",
+    "puppeteer-core": "^24.43.1",
+    "ws": "^8.22.0"
+  }
+}

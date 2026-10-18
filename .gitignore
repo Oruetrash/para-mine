@@ -1,0 +1,11 @@
+node_modules/
+fotosconmiñe/
+fotosconmi*e/
+scripts/mapping.json
+scripts/test.js
+scripts/test-upload.js
+scripts/debug-login.js
+scripts/e2e.js
+scripts/inspect.js
+package-lock.json
+*.log
