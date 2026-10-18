@@ -6,6 +6,10 @@ scripts/test.js
 scripts/test-upload.js
 scripts/debug-login.js
 scripts/e2e.js
+scripts/e2e2.js
+scripts/debug2.js
+scripts/live-test.js
 scripts/inspect.js
+scripts/icons.js
 package-lock.json
 *.log
