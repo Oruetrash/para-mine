@@ -13,3 +13,4 @@ scripts/inspect.js
 scripts/icons.js
 package-lock.json
 *.log
+scripts/e2e3.js

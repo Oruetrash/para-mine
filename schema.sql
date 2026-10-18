@@ -1,37 +1,112 @@
 -- ============================================================
---  NUEVAS FUNCIONES (pegá esto en Supabase → SQL Editor → Run)
+--  NUEVAS TABLAS (pegá en Supabase → SQL Editor → Run)
+--  (las de fotos_dia / fotos_para_vos / destacada ya están)
 -- ============================================================
 
--- 1) Columna para "Mejores del mes" (destacar fotos)
-alter table public.fotos add column if not exists destacada boolean not null default false;
-
--- 2) Foto juntos de cada día (con "por qué no subimos" en la nota)
-create table if not exists public.fotos_dia (
-  id uuid primary key default gen_random_uuid(),
-  fecha date not null unique,
-  url text,
-  nota text,
-  autor text,
-  subido_por text,
-  creado_en timestamptz default now()
-);
-alter table public.fotos_dia enable row level security;
-create policy "fotos_dia_select" on public.fotos_dia for select to authenticated using (true);
-create policy "fotos_dia_insert" on public.fotos_dia for insert to authenticated with check (true);
-create policy "fotos_dia_update" on public.fotos_dia for update to authenticated using (true);
-create policy "fotos_dia_delete" on public.fotos_dia for delete to authenticated using (true);
-
--- 3) Intercambio "foto para vos" (él <-> ella)
-create table if not exists public.fotos_para_vos (
+-- Mensajes y quizzes diarios
+create table if not exists public.mensajes_diarios (
   id uuid primary key default gen_random_uuid(),
   fecha date not null default current_date,
-  remitente text not null,          -- 'el' | 'ella'
-  url text not null,
-  mensaje text,
+  tipo text not null,             -- 'mensaje' | 'quiz'
+  texto text not null,
+  de text not null,               -- 'el' | 'ella'
+  respuesta text,
   creado_en timestamptz default now()
 );
-alter table public.fotos_para_vos enable row level security;
-create policy "fotos_para_vos_select" on public.fotos_para_vos for select to authenticated using (true);
-create policy "fotos_para_vos_insert" on public.fotos_para_vos for insert to authenticated with check (true);
-create policy "fotos_para_vos_update" on public.fotos_para_vos for update to authenticated using (true);
-create policy "fotos_para_vos_delete" on public.fotos_para_vos for delete to authenticated using (true);
+
+-- Razones por las que te amo
+create table if not exists public.razones (
+  id uuid primary key default gen_random_uuid(),
+  texto text not null,
+  autor text,
+  creado_en timestamptz default now()
+);
+
+-- Su arte (dibujos / planos)
+create table if not exists public.arte (
+  id uuid primary key default gen_random_uuid(),
+  url text not null,
+  titulo text,
+  creado_en timestamptz default now()
+);
+
+-- Caja de "te quiero"
+create table if not exists public.te_quiero (
+  id uuid primary key default gen_random_uuid(),
+  autor text,
+  creado_en timestamptz default now()
+);
+
+-- Diario compartido
+create table if not exists public.diario (
+  id uuid primary key default gen_random_uuid(),
+  texto text not null,
+  autor text,
+  fecha date default current_date,
+  creado_en timestamptz default now()
+);
+
+-- Lista de planes
+create table if not exists public.planes (
+  id uuid primary key default gen_random_uuid(),
+  texto text not null,
+  hecho boolean not null default false,
+  creado_en timestamptz default now()
+);
+
+-- Cápsula del tiempo
+create table if not exists public.capsula (
+  id uuid primary key default gen_random_uuid(),
+  texto text not null,
+  autor text,
+  abre_en date,
+  creado_en timestamptz default now()
+);
+
+-- Cartas
+create table if not exists public.cartas (
+  id uuid primary key default gen_random_uuid(),
+  titulo text,
+  texto text not null,
+  autor text,
+  creado_en timestamptz default now()
+);
+
+-- Lugares importantes
+create table if not exists public.lugares (
+  id uuid primary key default gen_random_uuid(),
+  nombre text,
+  descripcion text,
+  creado_en timestamptz default now()
+);
+
+-- Reto de la semana
+create table if not exists public.reto (
+  id uuid primary key default gen_random_uuid(),
+  texto text not null,
+  hecho boolean not null default false,
+  creado_en timestamptz default now()
+);
+
+-- Mood del día
+create table if not exists public.mood (
+  id uuid primary key default gen_random_uuid(),
+  fecha date not null default current_date,
+  mood text not null,
+  autor text,
+  creado_en timestamptz default now()
+);
+
+-- ---------- Seguridad (RLS) ----------
+do $$
+declare t text;
+begin
+  foreach t in array array['mensajes_diarios','razones','arte','te_quiero','diario','planes','capsula','cartas','lugares','reto','mood']
+  loop
+    execute format('alter table public.%I enable row level security', t);
+    execute format('create policy %I_select on public.%I for select to authenticated using (true)', t, t);
+    execute format('create policy %I_insert on public.%I for insert to authenticated with check (true)', t, t);
+    execute format('create policy %I_update on public.%I for update to authenticated using (true)', t, t);
+    execute format('create policy %I_delete on public.%I for delete to authenticated using (true)', t, t);
+  end loop;
+end $$;

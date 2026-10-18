@@ -7,55 +7,47 @@ const CONFIG = {
   SUPABASE_KEY: 'sb_publishable_6pqP08gApFgrWTmW-s8h0Q_JCdrEU0C',
   LOGIN_EMAIL: 'mili@nosotros.com',
 
+  ONESIGNAL_APP_ID: '15190aaf-b1ec-4414-b27b-e78857f6717f',
+
   // Su cumple
   NOMBRE: 'Miñe',
   CUMPLE: new Date('2026-11-21T00:00:00'),
   CUMPLE_TEXTO: '21 de noviembre',
 
-  // Días de la historia (para la línea de tiempo)
+  // Desde cuándo contamos "días juntos"
+  INICIO: new Date('2023-04-28T00:00:00'),
+
+  // Historia (sin fechas exactas, sin spoiler del 21/11)
   HISTORIA: [
     {
-      fecha: 'Abril · Mayo 2023',
-      titulo: 'Donde todo empezó',
-      texto: 'Entre fines de abril y principios de mayo de 2023, sin avisar, nos encontramos. Y desde ese día, mi mundo empezó a girar alrededor de vos.',
+      titulo: 'El inicio',
+      texto: 'Nos encontramos sin buscarnos, en una primavera que no prometía nada y terminó dándolo todo.',
       icono: '🌱',
     },
     {
-      fecha: 'Octubre 2023',
       titulo: 'La primera pausa',
-      texto: 'A principios de octubre, la vida nos separó un rato. Pero ni el tiempo ni la distancia pudieron apagar lo que sentíamos.',
+      texto: 'La vida nos separó un rato. Pero ni el tiempo ni la distancia pudieron apagar lo que sentíamos.',
       icono: '🌧️',
     },
     {
-      fecha: 'Diciembre 2023',
       titulo: 'Volvimos',
-      texto: 'A mediados de diciembre, nos volvimos a elegir. Porque cuando es de verdad, siempre se vuelve.',
+      texto: 'Nos volvimos a elegir. Porque cuando es de verdad, siempre se vuelve.',
       icono: '💫',
     },
     {
-      fecha: '2024 · 2025 · 2026',
-      titulo: 'Nuestra historia larga',
+      titulo: 'Nuestra historia',
       texto: 'Vinieron años de fotos, risas, viajes, cumpleaños y mil recuerdos. Mes a mes fuimos construyendo lo que hoy somos.',
       icono: '❤️',
     },
     {
-      fecha: '17 de septiembre de 2026',
-      titulo: 'Otra pausa',
-      texto: 'En septiembre la historia se volvió a frenar. Y otra vez aprendimos que sin el otro, nada es igual.',
+      titulo: 'Septiembre',
+      texto: 'En septiembre la historia se volvió a frenar, y otra vez aprendimos que sin el otro nada es igual.',
       icono: '🥀',
     },
     {
-      fecha: '18 de octubre de 2026',
-      titulo: 'Nos reencontramos',
-      texto: 'Hoy, de nuevo juntos, entendimos que esto no es casualidad: es que simplemente no sabemos estar separados.',
+      titulo: 'Octubre',
+      texto: 'En octubre volvimos a encontrarnos. Y entendimos que esto no es casualidad: es que no sabemos estar separados.',
       icono: '🌅',
-    },
-    {
-      fecha: '21 de noviembre de 2026',
-      titulo: 'El comienzo',
-      texto: 'Hoy, en tu cumple, se abre una puerta nueva. La más importante de todas…',
-      icono: '🔐',
-      especial: true,
     },
   ],
 
@@ -81,13 +73,49 @@ const CONFIG = {
     },
   },
 
+  // Banco de preguntas de quiz (se eligen 2 al azar por día)
+  BANK_QUIZ: [
+    '¿Dónde fue nuestra primera cita?',
+    '¿Qué fue lo primero que pensaste de mí?',
+    '¿Cuál es tu recuerdo favorito conmigo?',
+    '¿Qué canción te recuerda a nosotros?',
+    '¿En qué momento te diste cuenta de que me querías?',
+    '¿Qué es lo que más te gusta de mí?',
+    '¿Cuál fue el día más feliz que pasamos juntos?',
+    '¿Qué plan soñás hacer conmigo?',
+    '¿Qué cosa mía te saca una sonrisa?',
+    '¿Cuál fue nuestro mejor beso?',
+    '¿Qué lugar te gustaría visitar conmigo?',
+    '¿Qué te gustaría que hiciéramos más seguido?',
+  ],
+
+  // Banco de mensajes para la notificación diaria
+  BANK_MENSAJES: [
+    'Hoy también te elijo a vos.',
+    'Pensé en vos apenas me desperté.',
+    'Gracias por existir.',
+    'Sos mi lugar favorito en el mundo.',
+    'Te extraño aunque estés cerca.',
+    'Sos lo mejor que me pasó.',
+    'Hoy me acordé de tu sonrisa.',
+    'No veo la hora de verte.',
+    'Sos mi calma y mi locura.',
+    'Cada día te quiero un poquito más.',
+    'Gracias por quedarte.',
+    'Sos mi "para siempre".',
+    'Hoy te mando un abrazo gigante.',
+    'Mi día mejora solo con saber de vos.',
+    'Sos la razón de mi sonrisa de hoy.',
+    'Te elijo, hoy y siempre.',
+  ],
+
   // La propuesta (el cofre)
   PROPUESTA: {
     pregunta: '¿Querés volver a ser mi novia?',
-    carta: 'Miñe… han pasado tres años desde aquella primavera en la que nos encontramos sin buscarnos. Tuvimos capítulos, pausas, vueltas… y sin embargo, acá estamos: de nuevo juntos, como siempre tenía que ser.\n\nPorque te elijo. Te elegí en 2023, te elijo hoy y te voy a elegir todos los días.\n\nHoy, en tu cumple, te quiero pedir algo muy importante…',
-    si: 'SÍ 💖',
+    carta: 'Miñe… pasaron años desde aquella primavera en la que nos encontramos sin buscarnos. Tuvimos capítulos, pausas, vueltas… y sin embargo, acá estamos: de nuevo juntos, como siempre tenía que ser.\n\nPorque te elijo. Te elegí el primer día, te elijo hoy y te voy a elegir todos los días.\n\nHoy, en tu cumple, te quiero pedir algo muy importante…',
+    si: 'SÍ ❤️',
     no: 'No',
-    final: '21 · 11 · 2026 — oficialmente nuestros ❤',
-    cancionCelebracion: '3JE8qYm4luylvVnhVuUfvC', // Ando Ganas
+    final: 'Oficialmente… nuestros ❤',
+    cancionCelebracion: '3JE8qYm4luylvVnhVuUfvC',
   },
 };

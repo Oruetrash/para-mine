@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Para Miñe</title>
-  <meta name="theme-color" content="#5a2a26" />
+  <meta name="theme-color" content="#3a241b" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -14,15 +14,16 @@
   <link rel="apple-touch-icon" href="icons/icon-180.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Pinyon+Script&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script src="js/config.js"></script>
 </head>
 <body>
   <div id="particles-bg"></div>
 
-  <!-- PANTALLA DE INGRESO -->
+  <!-- LOGIN -->
   <section id="login-screen" class="screen">
     <div class="login-card">
       <div class="login-heart">❤️</div>
@@ -30,6 +31,11 @@
       <p class="login-sub">Un lugar solo nuestro</p>
       <form id="login-form">
         <input type="password" id="password-input" inputmode="numeric" autocomplete="current-password" placeholder="Ingresá la clave" maxlength="20" />
+        <div class="who-toggle">
+          <span class="who-label">¿Quién sos?</span>
+          <button type="button" class="who-btn active" data-who="el">Él</button>
+          <button type="button" class="who-btn" data-who="ella">Ella</button>
+        </div>
         <button type="submit" id="login-btn">Entrar</button>
       </form>
       <p id="login-error" class="login-error"></p>
@@ -39,12 +45,12 @@
   <!-- APP -->
   <div id="app" class="hidden">
     <nav id="nav">
-      <button class="nav-btn active" data-view="inicio"><span class="nav-ico">💝</span><span class="nav-txt">Inicio</span></button>
+      <button class="nav-btn active" data-view="inicio"><span class="nav-ico">🕯️</span><span class="nav-txt">Inicio</span></button>
       <button class="nav-btn" data-view="historia"><span class="nav-ico">📖</span><span class="nav-txt">Historia</span></button>
       <button class="nav-btn" data-view="hoy"><span class="nav-ico">📸</span><span class="nav-txt">Hoy</span></button>
-      <button class="nav-btn" data-view="album"><span class="nav-ico">📒</span><span class="nav-txt">Álbum</span></button>
-      <button class="nav-btn" data-view="canciones"><span class="nav-ico">🎵</span><span class="nav-txt">Música</span></button>
+      <button class="nav-btn" data-view="album"><span class="nav-ico">🖼️</span><span class="nav-txt">Álbum</span></button>
       <button class="nav-btn" data-view="cofre"><span class="nav-ico">🎁</span><span class="nav-txt">Cofre</span></button>
+      <button class="nav-btn" id="nav-mas"><span class="nav-ico">✨</span><span class="nav-txt">Más</span></button>
     </nav>
 
     <!-- INICIO -->
@@ -61,10 +67,11 @@
             <div class="cd-box"><span id="cd-min">--</span><label>min</label></div>
             <div class="cd-box"><span id="cd-seg">--</span><label>seg</label></div>
           </div>
-          <p class="countdown-hint" id="countdown-hint"></p>
         </div>
+        <div class="dias-juntos" id="dias-juntos"></div>
+        <div class="recuerdo-card" id="recuerdo-del-dia"></div>
         <button class="cta" data-go="historia">Ver nuestra historia</button>
-        <button class="cta cta-alt" data-go="hoy">La foto de hoy 📸</button>
+        <button class="cta cta-alt" data-go="hoy">El quiz y mensaje de hoy 💌</button>
         <button class="cta cta-alt" data-go="cofre">Hay algo para vos 🎁</button>
       </div>
     </section>
@@ -76,18 +83,20 @@
       <div class="timeline" id="timeline"></div>
     </section>
 
-    <!-- HOY (foto del día + para vos) -->
+    <!-- HOY -->
     <section id="view-hoy" class="view">
       <h2 class="section-title script">Hoy</h2>
-      <p class="section-sub">Una foto nuestra por día, para no perdernos ni un momento.</p>
+      <p class="section-sub">Un rato para nosotros, todos los días.</p>
       <div id="hoy"></div>
       <div class="mini-history-label">Últimos días</div>
       <div id="hoy-history" class="hoy-history"></div>
 
-      <div class="divider"><span>❤</span></div>
+      <div class="divider"><span>💌</span></div>
+      <h3 class="script sub-heading">Mensaje y quiz de hoy</h3>
+      <div id="diario-envios"></div>
 
+      <div class="divider"><span>📸</span></div>
       <h3 class="script sub-heading">Para vos</h3>
-      <p class="section-sub">Una foto mía para vos, y una tuya para mí.</p>
       <div class="pv-tabs">
         <button class="pv-tab active" data-pv="el">De él</button>
         <button class="pv-tab" data-pv="ella">De ella</button>
@@ -109,7 +118,13 @@
         <span><i class="dot d3"></i> Falta porque…</span>
       </div>
       <div id="album"></div>
-      <p class="album-footer">⭐ Tocá una foto para destacarla en "Mejores".</p>
+    </section>
+
+    <!-- COFRE -->
+    <section id="view-cofre" class="view">
+      <h2 class="section-title script">Para Miñe</h2>
+      <p class="section-sub">Un cofre guardado con todo mi amor.</p>
+      <div id="cofre"></div>
     </section>
 
     <!-- CANCIONES -->
@@ -119,30 +134,107 @@
       <div id="canciones"></div>
     </section>
 
-    <!-- COFRE -->
-    <section id="view-cofre" class="view">
-      <h2 class="section-title script">Para Miñe</h2>
-      <p class="section-sub">Un cofre guardado con todo mi amor.</p>
-      <div id="cofre"></div>
+    <!-- RAZONES -->
+    <section id="view-razones" class="view">
+      <h2 class="section-title script">Razones por las que te amo</h2>
+      <p class="section-sub">Las completamos entre los dos.</p>
+      <div id="razones"></div>
     </section>
+
+    <!-- SU ARTE -->
+    <section id="view-arte" class="view">
+      <h2 class="section-title script">Su arte</h2>
+      <p class="section-sub">Sus dibujos, y cuando arranque arquitectura, sus planos.</p>
+      <div id="arte"></div>
+    </section>
+
+    <!-- TE QUIERO -->
+    <section id="view-tequiero" class="view">
+      <h2 class="section-title script">Te quiero</h2>
+      <p class="section-sub">Un botón, todo el amor del mundo.</p>
+      <div id="tequiero"></div>
+    </section>
+
+    <!-- DIARIO -->
+    <section id="view-diario" class="view">
+      <h2 class="section-title script">Diario</h2>
+      <p class="section-sub">Lo que vivimos, escrito por cualquiera de los dos.</p>
+      <div id="diario"></div>
+    </section>
+
+    <!-- PLANES -->
+    <section id="view-planes" class="view">
+      <h2 class="section-title script">Lo que quiero hacer con vos</h2>
+      <p class="section-sub">Nuestra lista de planes.</p>
+      <div id="planes"></div>
+    </section>
+
+    <!-- CÁPSULA -->
+    <section id="view-capsula" class="view">
+      <h2 class="section-title script">Cápsula del tiempo</h2>
+      <p class="section-sub">Mensajes que se abren en una fecha futura.</p>
+      <div id="capsula"></div>
+    </section>
+
+    <!-- CARTAS -->
+    <section id="view-cartas" class="view">
+      <h2 class="section-title script">Cartas</h2>
+      <p class="section-sub">Para decir lo que a veces no sale en voz alta.</p>
+      <div id="cartas"></div>
+    </section>
+
+    <!-- LUGARES -->
+    <section id="view-lugares" class="view">
+      <h2 class="section-title script">Lugares</h2>
+      <p class="section-sub">Los lugares que marcaron nuestra historia.</p>
+      <div id="lugares"></div>
+    </section>
+
+    <!-- RETO -->
+    <section id="view-reto" class="view">
+      <h2 class="section-title script">Reto de la semana</h2>
+      <p class="section-sub">Una cosita para hacer juntos.</p>
+      <div id="reto"></div>
+    </section>
+
+    <!-- MOOD -->
+    <section id="view-mood" class="view">
+      <h2 class="section-title script">¿Cómo estás hoy?</h2>
+      <p class="section-sub">Nos cuidamos también así.</p>
+      <div id="mood"></div>
+    </section>
+
+    <!-- CREADOR -->
+    <section id="view-creador" class="view">
+      <h2 class="section-title script">Modo creador</h2>
+      <p class="section-sub">Tu rincón de control.</p>
+      <div id="creador"></div>
+    </section>
+  </div>
+
+  <!-- MENÚ "MÁS" -->
+  <div id="mas-menu" class="mas-menu hidden">
+    <div class="mas-card">
+      <button class="mas-close" id="mas-close">✕</button>
+      <h2 class="script mas-title">Más</h2>
+      <div class="mas-grid" id="mas-grid"></div>
+    </div>
   </div>
 
   <!-- Lightbox -->
   <div id="lightbox" class="lightbox hidden">
-    <div class="lightbox-inner">
-      <span class="lightbox-close">✕</span>
-      <img id="lightbox-img" src="" alt="foto" />
-    </div>
+    <div class="lightbox-inner"><span class="lightbox-close">✕</span><img id="lightbox-img" src="" alt="foto" /></div>
   </div>
 
-  <!-- Modal nota (falta porque) -->
-  <div id="note-modal" class="modal hidden">
+  <!-- Modal genérico (texto) -->
+  <div id="text-modal" class="modal hidden">
     <div class="modal-card">
-      <h3 id="note-modal-title">¿Por qué falta esta foto?</h3>
-      <textarea id="note-text" rows="4" placeholder="Ej: este mes no nos vimos, estaba de viaje, fue una pausa…"></textarea>
+      <h3 id="text-modal-title">Título</h3>
+      <textarea id="text-modal-text" rows="4"></textarea>
+      <input type="text" id="text-modal-extra" placeholder="" class="hidden" />
       <div class="modal-actions">
-        <button class="btn-ghost" id="note-cancel">Cancelar</button>
-        <button class="btn-solid" id="note-save">Guardar</button>
+        <button class="btn-ghost" id="text-cancel">Cancelar</button>
+        <button class="btn-solid" id="text-save">Guardar</button>
       </div>
     </div>
   </div>
@@ -153,40 +245,9 @@
       <h3>Subir foto</h3>
       <p id="upload-slot-label" class="upload-label"></p>
       <input type="file" id="upload-input" accept="image/*,video/*" />
-      <p class="upload-hint">Fotos: JPG/PNG. Si es de iPhone (.heic), convertila a JPG primero.</p>
       <div class="modal-actions">
         <button class="btn-ghost" id="upload-cancel">Cancelar</button>
         <button class="btn-solid" id="upload-do">Subir</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal nota del día -->
-  <div id="notadia-modal" class="modal hidden">
-    <div class="modal-card">
-      <h3>¿Por qué no subimos foto hoy?</h3>
-      <textarea id="notadia-text" rows="3" placeholder="Ej: hoy no nos vimos, estuve ocupada, me olvidé…"></textarea>
-      <div class="modal-actions">
-        <button class="btn-ghost" id="notadia-cancel">Cancelar</button>
-        <button class="btn-solid" id="notadia-save">Guardar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal foto para vos -->
-  <div id="paravos-modal" class="modal hidden">
-    <div class="modal-card">
-      <h3>Foto para vos</h3>
-      <p class="upload-label">¿Quién la sube?</p>
-      <div class="pv-choose">
-        <button class="pv-choose-btn active" data-who="el">Yo (él)</button>
-        <button class="pv-choose-btn" data-who="ella">Yo (ella)</button>
-      </div>
-      <input type="file" id="paravos-input" accept="image/*,video/*" />
-      <input type="text" id="paravos-msg" placeholder="Mensaje (opcional)" maxlength="120" />
-      <div class="modal-actions">
-        <button class="btn-ghost" id="paravos-cancel">Cancelar</button>
-        <button class="btn-solid" id="paravos-do">Enviar</button>
       </div>
     </div>
   </div>
