@@ -7,7 +7,7 @@ const CONFIG = {
   SUPABASE_KEY: 'sb_publishable_6pqP08gApFgrWTmW-s8h0Q_JCdrEU0C',
   LOGIN_EMAIL: 'mili@nosotros.com',
 
-  ONESIGNAL_APP_ID: '15190aaf-b1ec-4414-b27b-e78857f6717f',
+  ONESIGNAL_APP_ID: '5ff32a07-7980-4692-aa0f-c48f17853f8f',
 
   // Su cumple
   NOMBRE: 'Miñe',
