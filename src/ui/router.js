@@ -3,15 +3,32 @@ import { get } from '../store/store.js';
 import { ensure } from '../services/data.js';
 import { requestPushPermission } from '../services/push.js';
 import { logout } from '../services/auth.js';
+import { openLayer, closeTop, dismissAllLayers, getView, setView } from './layers.js';
 import { toast } from './toast.js';
 
-export async function go(view) {
-  $('#mas-menu').classList.add('hidden');
-  $$('.nav-btn').forEach((b) => b.classList.toggle('active', b.dataset.view === view));
+export function show(view) {
+  $$('.nav-btn').forEach((b) => {
+    const active = b.dataset.view === view;
+    b.classList.toggle('active', active);
+    if (active) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  });
   $$('.view').forEach((v) => v.classList.remove('active'));
   const el = $('#view-' + view);
   if (el) el.classList.add('active');
   window.scrollTo({ top: 0 });
+}
+
+export async function go(view) {
+  dismissAllLayers();
+  if (getView() === view && history.state && history.state.view === view) {
+    show(view);
+    await ensure(view);
+    return;
+  }
+  history.pushState({ view }, '', '#' + view);
+  setView(view);
+  show(view);
   await ensure(view);
 }
 
@@ -52,11 +69,11 @@ export function renderMasMenu() {
 export function initRouter() {
   $$('.nav-btn').forEach((btn) => {
     if (btn.id === 'nav-mas') {
-      btn.addEventListener('click', () => $('#mas-menu').classList.remove('hidden'));
+      btn.addEventListener('click', () => openLayer($('#mas-menu')));
       return;
     }
     btn.addEventListener('click', () => go(btn.dataset.view));
   });
   $$('.cta').forEach((btn) => btn.addEventListener('click', () => go(btn.dataset.go)));
-  $('#mas-close').addEventListener('click', () => $('#mas-menu').classList.add('hidden'));
+  $('#mas-close').addEventListener('click', closeTop);
 }

@@ -2,17 +2,60 @@ import { $, $$ } from '../lib/dom.js';
 import { get, set } from '../store/store.js';
 import { MESES, SLOTS, fechaCorta } from '../lib/format.js';
 import { toast } from './toast.js';
-import { saveTextAction, doUpload, sendParaVos, saveLugar, saveCancion, saveAdviento } from '../services/data.js';
+import { saveTextAction, doUpload, sendParaVos, saveLugar, saveCancion, saveAdviento, ensure } from '../services/data.js';
+
+// ---------- Capas + History API (el botón Atrás cierra la capa superior) ----------
+const layers = [];
+let view = 'inicio';
+
+export const getView = () => view;
+export const setView = (v) => { view = v; };
+export const layersCount = () => layers.length;
+
+export function openLayer(el, onClose) {
+  el.classList.remove('hidden');
+  layers.push({ el, onClose });
+  history.pushState({ layer: layers.length }, '');
+}
+
+export function closeTop() { if (layers.length) history.back(); }
+
+export function closeLayerTop() {
+  const top = layers.pop();
+  if (top) { top.el.classList.add('hidden'); top.onClose?.(); }
+  return !!top;
+}
+
+export function dismissAllLayers() {
+  let closed = false;
+  while (layers.length) { closeLayerTop(); closed = true; }
+  if (closed && history.state && history.state.layer != null) history.replaceState({ view }, '');
+  return closed;
+}
+
+export function initHistory(onView) {
+  addEventListener('popstate', (e) => {
+    const st = e.state || {};
+    if (layers.length > (st.layer ?? 0)) {
+      closeLayerTop();
+    } else {
+      view = st.view || 'inicio';
+      onView && onView(view);
+      ensure(view);
+    }
+  });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') closeTop(); });
+}
 
 // ---------- Lightbox ----------
 export function openLightbox(url) {
   if (!url) return;
   $('#lightbox-img').src = url;
-  $('#lightbox').classList.remove('hidden');
+  openLayer($('#lightbox'));
 }
 function initLightbox() {
   $('#lightbox').addEventListener('click', (e) => {
-    if (e.target.id === 'lightbox' || e.target.classList.contains('lightbox-close')) $('#lightbox').classList.add('hidden');
+    if (e.target.id === 'lightbox' || e.target.classList.contains('lightbox-close')) closeTop();
   });
 }
 
@@ -27,7 +70,7 @@ export function openTextModal(title, placeholder, action, id) {
   if (action === 'capsula') { extra.classList.remove('hidden'); extra.type = 'date'; extra.placeholder = 'Fecha de apertura'; }
   else if (action === 'cartas') { extra.classList.remove('hidden'); extra.type = 'text'; extra.placeholder = 'Título (opcional)'; }
   else if (action === 'lugares') { extra.classList.remove('hidden'); extra.type = 'text'; extra.placeholder = 'Nombre del lugar'; }
-  $('#text-modal').classList.remove('hidden');
+  openLayer($('#text-modal'));
 }
 
 // ---------- Modal de subir foto ----------
@@ -39,7 +82,7 @@ export function openUploadModal(ctx) {
   else label = `${SLOTS.find((s) => s.tipo === ctx.slot)?.label || 'Extra'} · ${MESES[ctx.mes - 1]} ${ctx.anio}`;
   $('#upload-slot-label').textContent = label;
   $('#upload-input').value = '';
-  $('#upload-modal').classList.remove('hidden');
+  openLayer($('#upload-modal'));
 }
 
 // ---------- Modal "Para vos" ----------
@@ -48,20 +91,20 @@ export function openPvModal() {
   $('#pv-label').textContent = `Mandale una foto a ${para === 'el' ? 'Él' : 'Ella'}`;
   $('#pv-input').value = '';
   $('#pv-text').value = '';
-  $('#pv-modal').classList.remove('hidden');
+  openLayer($('#pv-modal'));
 }
 
 export function openLugarModal() {
   $('#lugar-nombre').value = '';
   $('#lugar-desc').value = '';
   $('#lugar-ubicacion').value = '';
-  $('#lugar-modal').classList.remove('hidden');
+  openLayer($('#lugar-modal'));
 }
 
 export function openCancionModal() {
   $('#cancion-link').value = '';
   $('#cancion-msg').value = '';
-  $('#cancion-modal').classList.remove('hidden');
+  openLayer($('#cancion-modal'));
 }
 
 export function openAdventModal(fecha, entry) {
@@ -72,7 +115,7 @@ export function openAdventModal(fecha, entry) {
   $('#adv-foto').value = '';
   $('#adv-cancion').value = entry?.tipo === 'cancion' ? (entry.url || '') : '';
   setAdvTipo(entry?.tipo || 'texto');
-  $('#adviento-modal').classList.remove('hidden');
+  openLayer($('#adviento-modal'));
 }
 
 export function setAdvTipo(tipo) {
@@ -86,7 +129,7 @@ export function setAdvTipo(tipo) {
 export function initLayers() {
   initLightbox();
 
-  $('#text-cancel').addEventListener('click', () => $('#text-modal').classList.add('hidden'));
+  $('#text-cancel').addEventListener('click', closeTop);
   $('#text-save').addEventListener('click', async () => {
     const texto = $('#text-modal-text').value.trim();
     const extra = $('#text-modal-extra').value.trim();
@@ -94,11 +137,11 @@ export function initLayers() {
     if (!texto && action !== 'respuesta') { toast.error('Escribí algo'); return; }
     try {
       await saveTextAction(action, texto, extra, id);
-      $('#text-modal').classList.add('hidden');
+      closeTop();
     } catch (e) { toast.error(e.message || 'No se pudo guardar'); }
   });
 
-  $('#upload-cancel').addEventListener('click', () => $('#upload-modal').classList.add('hidden'));
+  $('#upload-cancel').addEventListener('click', closeTop);
   $('#upload-do').addEventListener('click', async () => {
     const file = $('#upload-input').files[0];
     if (!file) { toast.error('Elegí una foto primero'); return; }
@@ -106,12 +149,12 @@ export function initLayers() {
     btn.disabled = true;
     try {
       await doUpload(get('uploadContext'), file);
-      $('#upload-modal').classList.add('hidden');
+      closeTop();
     } catch (e) { toast.error(e.message || 'No se pudo subir'); }
     finally { btn.disabled = false; }
   });
 
-  $('#pv-cancel').addEventListener('click', () => $('#pv-modal').classList.add('hidden'));
+  $('#pv-cancel').addEventListener('click', closeTop);
   $('#pv-save').addEventListener('click', async () => {
     const file = $('#pv-input').files[0];
     if (!file) { toast.error('Elegí una foto primero'); return; }
@@ -120,12 +163,12 @@ export function initLayers() {
     btn.disabled = true;
     try {
       await sendParaVos(file, msg);
-      $('#pv-modal').classList.add('hidden');
+      closeTop();
     } catch (e) { toast.error(e.message || 'No se pudo enviar'); }
     finally { btn.disabled = false; }
   });
 
-  $('#lugar-cancel').addEventListener('click', () => $('#lugar-modal').classList.add('hidden'));
+  $('#lugar-cancel').addEventListener('click', closeTop);
   $('#lugar-save').addEventListener('click', async () => {
     const nombre = $('#lugar-nombre').value.trim();
     const desc = $('#lugar-desc').value.trim();
@@ -133,22 +176,22 @@ export function initLayers() {
     if (!nombre && !desc) { toast.error('Poné al menos un nombre o una descripción'); return; }
     try {
       await saveLugar(nombre, desc, ubic);
-      $('#lugar-modal').classList.add('hidden');
+      closeTop();
     } catch (e) { toast.error(e.message || 'No se pudo guardar'); }
   });
 
-  $('#cancion-cancel').addEventListener('click', () => $('#cancion-modal').classList.add('hidden'));
+  $('#cancion-cancel').addEventListener('click', closeTop);
   $('#cancion-save').addEventListener('click', async () => {
     const link = $('#cancion-link').value.trim();
     const msg = $('#cancion-msg').value.trim() || null;
     try {
       await saveCancion(link, msg);
-      $('#cancion-modal').classList.add('hidden');
+      closeTop();
     } catch (e) { toast.error(e.message || 'No se pudo agregar'); }
   });
 
   $$('#adv-tipo button').forEach((b) => b.addEventListener('click', () => setAdvTipo(b.dataset.tipo)));
-  $('#adviento-cancel').addEventListener('click', () => $('#adviento-modal').classList.add('hidden'));
+  $('#adviento-cancel').addEventListener('click', closeTop);
   $('#adviento-save').addEventListener('click', async () => {
     const fecha = get('advFecha');
     const tipo = get('advTipo');
@@ -161,11 +204,11 @@ export function initLayers() {
     btn.disabled = true;
     try {
       await saveAdviento(fecha, tipo, titulo, texto, url, file, existing);
-      $('#adviento-modal').classList.add('hidden');
+      closeTop();
     } catch (e) { toast.error(e.message || 'No se pudo guardar'); }
     finally { btn.disabled = false; }
   });
 
-  $('#door-close').addEventListener('click', () => $('#door-modal').classList.add('hidden'));
-  $('#door-modal').addEventListener('click', (e) => { if (e.target.id === 'door-modal') $('#door-modal').classList.add('hidden'); });
+  $('#door-close').addEventListener('click', closeTop);
+  $('#door-modal').addEventListener('click', (e) => { if (e.target.id === 'door-modal') closeTop(); });
 }

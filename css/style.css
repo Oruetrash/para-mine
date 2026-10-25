@@ -3,7 +3,7 @@
   --rojo2: #a63d40;
   --terracota: #c97c5d;
   --marron: #3a241b;
-  --marron-claro: #8a6a55;
+  --marron-claro: #765845;
   --dorado: #c29a5b;
   --crema: #f4ece1;
   --crema-claro: #fdf8f1;
@@ -63,7 +63,7 @@ html, body {
 @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 
 /* ---------- Login ---------- */
-.screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.screen { min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 20px; }
 .login-card {
   background: var(--crema-claro); border-radius: 28px; padding: 44px 30px; text-align: center;
   box-shadow: var(--sombra); width: 100%; max-width: 380px; border: 1px solid rgba(109,31,38,.07);
@@ -106,7 +106,7 @@ html, body {
   gap: 2px; padding: 5px 2px; border-radius: 14px; cursor: pointer; transition: transform .15s;
 }
 .nav-ico { font-size: 21px; transition: transform .15s; }
-.nav-txt { font-size: 9.5px; color: var(--marron-claro); font-weight: 500; letter-spacing: .3px; }
+.nav-txt { font-size: 11px; color: var(--marron-claro); font-weight: 500; letter-spacing: .3px; }
 .nav-btn.active .nav-ico { transform: translateY(-2px) scale(1.12); }
 .nav-btn.active .nav-txt { color: var(--rojo); }
 .nav-btn.active { background: #f3e5d3; }
@@ -425,6 +425,9 @@ html, body {
 .toast { padding: 12px 16px; border-radius: 12px; color: #fff; font-size: 14px; box-shadow: var(--sombra); animation: toastIn .2s ease-out; opacity: 1; transition: opacity .3s; }
 .toast-error { background: #a33b3b; }
 .toast-success { background: #3f7a4e; }
+.toast-undo { display: flex; align-items: center; gap: 12px; background: #3a241b; pointer-events: auto; }
+.toast-undo span { flex: 1; }
+.toast-action { border: 1px solid rgba(255,255,255,.5); background: transparent; color: #fff; border-radius: 8px; padding: 6px 12px; font: inherit; font-weight: 600; cursor: pointer; }
 .toast.out { opacity: 0; }
 @keyframes toastIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -445,3 +448,18 @@ html, body {
 @media (prefers-reduced-motion: reduce) {
   *, *::before { animation: none !important; transition: none !important; }
 }
+
+/* ---------- UI/UX: layout shifts y táctil ---------- */
+.slot img, .slot video, .extra-grid img, .pv-item img, .hoy-card img { aspect-ratio: 3/4; width: 100%; object-fit: cover; background: #eadcc8; }
+button, .nav-btn, .mini-btn { touch-action: manipulation; }
+.mini-btn, .entry-del, .song-del, .pv-del, .lightbox-close { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+
+/* Skeleton con shimmer (transform, no background-position) */
+.skel { position: relative; overflow: hidden; background: #eadcc8; border-radius: 14px; aspect-ratio: 3/4; }
+.skel-row { aspect-ratio: auto; height: 56px; margin-bottom: 10px; }
+.skel::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); animation: sh 1.3s infinite; }
+@keyframes sh { to { transform: translateX(100%); } }
+
+/* Fade-in de imágenes */
+img.fade { opacity: 0; transition: opacity .3s; }
+img.fade.in { opacity: 1; }

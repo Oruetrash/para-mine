@@ -2,7 +2,7 @@ import { $ } from '../lib/dom.js';
 import { get, on, getStatus } from '../store/store.js';
 import { fechaCorta, todayStr, whoLabel, escapeHtml } from '../lib/format.js';
 import { openLightbox, openUploadModal, openTextModal, openLugarModal } from '../ui/layers.js';
-import { toggleHecho, removeEntry, sendTeQuiero, saveMood } from '../services/data.js';
+import { toggleHecho, deferredRemove, sendTeQuiero, saveMood } from '../services/data.js';
 import { skeleton } from '../ui/skeleton.js';
 import { delegate } from '../ui/delegate.js';
 
@@ -34,8 +34,7 @@ function renderStandard(list) {
   const wrap = $('#' + list.id);
   const items = (get(list.table) || []).slice().reverse();
   if (getStatus(list.table) === 'loading' && !items.length) {
-    wrap.innerHTML = '';
-    skeleton('#' + list.id, 3);
+    wrap.innerHTML = skeleton(3, 'skel-row');
     return;
   }
   wrap.innerHTML = `<button class="add-btn" data-a="${list.id}">${list.addLabel}</button>`;
@@ -49,7 +48,7 @@ function renderStandard(list) {
 function renderCapsula() {
   const wrap = $('#capsula');
   const items = get('capsula') || [];
-  if (getStatus('capsula') === 'loading' && !items.length) { wrap.innerHTML = ''; skeleton('#capsula', 3); return; }
+  if (getStatus('capsula') === 'loading' && !items.length) { wrap.innerHTML = skeleton(3, 'skel-row'); return; }
   wrap.innerHTML = '<button class="add-btn" data-a="capsula">+ Guardar un mensaje</button>';
   const abiertas = items.filter((c) => c.abre_en && c.abre_en <= todayStr());
   const cerradas = items.filter((c) => !c.abre_en || c.abre_en > todayStr());
@@ -60,7 +59,7 @@ function renderCapsula() {
 function renderLugares() {
   const wrap = $('#lugares');
   const items = get('lugares') || [];
-  if (getStatus('lugares') === 'loading' && !items.length) { wrap.innerHTML = ''; skeleton('#lugares', 3); return; }
+  if (getStatus('lugares') === 'loading' && !items.length) { wrap.innerHTML = skeleton(3, 'skel-row'); return; }
   wrap.innerHTML = '<button class="add-btn" id="add-lugar">+ Agregar un lugar</button>';
   if (!items.length) { wrap.innerHTML += '<p class="pv-empty">Todavía no hay lugares guardados. 📍</p>'; }
   items.slice().reverse().forEach((l) => {
@@ -84,14 +83,14 @@ function renderLugares() {
 function renderArte() {
   const wrap = $('#arte');
   const items = get('arte') || [];
-  if (getStatus('arte') === 'loading' && !items.length) { wrap.innerHTML = ''; skeleton('#arte', 3); return; }
+  if (getStatus('arte') === 'loading' && !items.length) { wrap.innerHTML = skeleton(3, 'skel-row'); return; }
   wrap.innerHTML = '<button class="add-btn" data-arte="1">+ Subir un dibujo / plano</button><div class="arte-grid"></div>';
   const grid = wrap.querySelector('.arte-grid');
   const urls = get('signedUrls') || {};
   items.slice().reverse().forEach((a) => {
     const div = document.createElement('div');
     div.className = 'arte-item';
-    div.innerHTML = `<img src="${urls[a.url] || ''}" data-full="${urls[a.url] || ''}" /><div class="arte-cap">${escapeHtml(a.titulo || '')}</div>`;
+    div.innerHTML = `<img src="${urls[a.url] || ''}" data-full="${urls[a.url] || ''}" class="fade" onload="this.classList.add('in')" /><div class="arte-cap">${escapeHtml(a.titulo || '')}</div>`;
     div.querySelector('img').addEventListener('click', (e) => openLightbox(e.target.dataset.full));
     grid.appendChild(div);
   });
@@ -155,19 +154,19 @@ export function initEntries() {
       });
     }
     delegate(wrap, '[data-d]', 'click', (el) => {
-      if (confirm('¿Borrar?')) removeEntry(list.table, el.dataset.d).catch(() => {});
+      deferredRemove(list.table, list.table, el.dataset.d);
     });
     on(list.table, () => renderStandard(list));
     on(list.table + '.status', () => renderStandard(list));
   });
 
   delegate($('#capsula'), '[data-a]', 'click', () => openTextModal('Cápsula del tiempo', '', 'capsula'));
-  delegate($('#capsula'), '[data-d]', 'click', (el) => { if (confirm('¿Borrar?')) removeEntry('capsula', el.dataset.d).catch(() => {}); });
+  delegate($('#capsula'), '[data-d]', 'click', (el) => { deferredRemove('capsula', 'capsula', el.dataset.d); });
   on('capsula', renderCapsula);
   on('capsula.status', renderCapsula);
 
   delegate($('#lugares'), '#add-lugar', 'click', () => openLugarModal());
-  delegate($('#lugares'), '[data-d]', 'click', (el) => { if (confirm('¿Borrar este lugar?')) removeEntry('lugares', el.dataset.d).catch(() => {}); });
+  delegate($('#lugares'), '[data-d]', 'click', (el) => { deferredRemove('lugares', 'lugares', el.dataset.d, { label: 'Lugar borrado' }); });
   on('lugares', renderLugares);
   on('lugares.status', renderLugares);
 

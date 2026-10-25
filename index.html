@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Para Miñe</title>
   <meta name="theme-color" content="#3a241b" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -37,7 +37,7 @@
 
   <!-- APP -->
   <div id="app" class="hidden">
-    <nav id="nav">
+    <nav id="nav" aria-label="Principal">
       <button class="nav-btn active" data-view="inicio"><span class="nav-ico">🕯️</span><span class="nav-txt">Inicio</span></button>
       <button class="nav-btn" data-view="historia"><span class="nav-ico">📖</span><span class="nav-txt">Historia</span></button>
       <button class="nav-btn" data-view="hoy"><span class="nav-ico">📸</span><span class="nav-txt">Hoy</span></button>
@@ -216,11 +216,11 @@
 
   <!-- Lightbox -->
   <div id="lightbox" class="lightbox hidden">
-    <div class="lightbox-inner"><span class="lightbox-close">✕</span><img id="lightbox-img" src="" alt="foto" /></div>
+    <div class="lightbox-inner"><button class="lightbox-close" aria-label="Cerrar">✕</button><img id="lightbox-img" src="" alt="foto" /></div>
   </div>
 
   <!-- Modal genérico (texto) -->
-  <div id="text-modal" class="modal hidden">
+  <div id="text-modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <h3 id="text-modal-title">Título</h3>
       <textarea id="text-modal-text" rows="4"></textarea>
@@ -233,7 +233,7 @@
   </div>
 
   <!-- Modal subir foto -->
-  <div id="upload-modal" class="modal hidden">
+  <div id="upload-modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <h3>Subir foto</h3>
       <p id="upload-slot-label" class="upload-label"></p>
@@ -246,7 +246,7 @@
   </div>
 
   <!-- Modal "Para vos" (foto + mensaje) -->
-  <div id="pv-modal" class="modal hidden">
+  <div id="pv-modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <h3>Foto para vos</h3>
       <p class="upload-label" id="pv-label"></p>
@@ -260,7 +260,7 @@
   </div>
 
   <!-- Modal lugar -->
-  <div id="lugar-modal" class="modal hidden">
+  <div id="lugar-modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <h3>Nuevo lugar</h3>
       <input type="text" id="lugar-nombre" placeholder="Nombre del lugar" />
@@ -274,7 +274,7 @@
   </div>
 
   <!-- Modal canción -->
-  <div id="cancion-modal" class="modal hidden">
+  <div id="cancion-modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <h3>Agregar una canción</h3>
       <input type="text" id="cancion-link" placeholder="Link de Spotify (o el código)" />
@@ -287,7 +287,7 @@
   </div>
 
   <!-- Modal puerta del calendario (creador) -->
-  <div id="adviento-modal" class="modal hidden">
+  <div id="adviento-modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <h3 id="adviento-titulo">Puerta del calendario</h3>
       <div class="adv-tipo" id="adv-tipo">
@@ -307,7 +307,7 @@
   </div>
 
   <!-- Modal abrir puerta -->
-  <div id="door-modal" class="modal hidden">
+  <div id="door-modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card door-card">
       <button class="mas-close" id="door-close">✕</button>
       <div id="door-content"></div>

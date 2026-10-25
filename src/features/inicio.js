@@ -43,7 +43,7 @@ export function renderRecuerdo() {
   if (!f) { wrap.innerHTML = ''; return; }
   const urls = get('signedUrls') || {};
   wrap.innerHTML = `<div class="rec-label">Recuerdo del día</div>
-    <img src="${urls[f.url] || ''}" data-full="${urls[f.url] || ''}" />
+    <img src="${urls[f.url] || ''}" data-full="${urls[f.url] || ''}" class="fade" onload="this.classList.add('in')" />
     <div class="rec-cap">${MESES[f.mes - 1]} ${f.anio}</div>`;
   wrap.querySelector('img')?.addEventListener('click', (e) => openLightbox(e.target.dataset.full));
 }

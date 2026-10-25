@@ -2,7 +2,7 @@ import { $, $$ } from '../lib/dom.js';
 import { get, on, set } from '../store/store.js';
 import { fechaCorta, todayStr, whoLabel, escapeHtml } from '../lib/format.js';
 import { openLightbox, openUploadModal, openTextModal, openPvModal } from '../ui/layers.js';
-import { removeDia, removeParaVos } from '../services/data.js';
+import { deferredRemove } from '../services/data.js';
 
 function renderHoy() {
   const hoy = todayStr();
@@ -12,8 +12,8 @@ function renderHoy() {
   let html = `<div class="hoy-card"><div class="hoy-fecha">${fechaCorta(hoy)} · hoy</div><div class="hoy-titulo">Nuestra foto de hoy</div>`;
   if (entry && entry.url) {
     const isVideo = entry.url.toLowerCase().endsWith('.mp4');
-    html += isVideo ? `<video src="${urls[entry.url] || ''}" controls playsinline></video>`
-      : `<img src="${urls[entry.url] || ''}" data-full="${urls[entry.url] || ''}" />`;
+    html += isVideo ? `<video src="${urls[entry.url] || ''}" controls playsinline preload="metadata"></video>`
+      : `<img src="${urls[entry.url] || ''}" data-full="${urls[entry.url] || ''}" class="fade" onload="this.classList.add('in')" />`;
     html += `<div class="hoy-actions"><button class="btn-big ghost" data-act="del-dia" data-id="${entry.id}">🗑️</button></div>`;
   } else if (entry && entry.nota) {
     html += `<div class="hoy-note">${escapeHtml(entry.nota)}</div>
@@ -26,7 +26,7 @@ function renderHoy() {
   wrap.innerHTML = html;
   wrap.querySelector('[data-act="subir-dia"]')?.addEventListener('click', () => openUploadModal({ tipo: 'dia' }));
   wrap.querySelector('[data-act="nota-dia"]')?.addEventListener('click', () => openTextModal('¿Por qué no subimos foto hoy?', '', 'notadia'));
-  wrap.querySelector('[data-act="del-dia"]')?.addEventListener('click', () => { if (confirm('¿Borrar?')) removeDia(entry.id).catch(() => {}); });
+  wrap.querySelector('[data-act="del-dia"]')?.addEventListener('click', () => { deferredRemove('fotosDia', 'fotos_dia', entry.id, { label: 'Borrado', paths: entry.url ? [entry.url] : [] }); });
   wrap.querySelector('img')?.addEventListener('click', (e) => openLightbox(e.target.dataset.full));
 
   const hist = $('#hoy-history');
@@ -37,7 +37,7 @@ function renderHoy() {
     const e = (get('fotosDia') || []).find((f) => f.fecha === ds);
     const cell = document.createElement('div');
     cell.className = 'day';
-    if (e && e.url) cell.innerHTML = `<img src="${urls[e.url] || ''}" data-full="${urls[e.url] || ''}" /><span class="day-dia">${d.getDate()}</span>`;
+    if (e && e.url) cell.innerHTML = `<img src="${urls[e.url] || ''}" data-full="${urls[e.url] || ''}" class="fade" onload="this.classList.add('in')" /><span class="day-dia">${d.getDate()}</span>`;
     else if (e && e.nota) cell.innerHTML = `<div class="day-note">💭</div><span class="day-dia">${d.getDate()}</span>`;
     else cell.innerHTML = `<div class="day-empty">·</div><span class="day-dia">${d.getDate()}</span>`;
     hist.appendChild(cell);
@@ -63,10 +63,10 @@ function renderParaVos() {
     if (f.url) {
       const url = urls[f.url] || '';
       const isVideo = (f.url || '').toLowerCase().endsWith('.mp4');
-      body = isVideo ? `<video src="${url}" controls playsinline></video>` : `<img src="${url}" data-full="${url}" />`;
+      body = isVideo ? `<video src="${url}" controls playsinline preload="metadata"></video>` : `<img src="${url}" data-full="${url}" class="fade" onload="this.classList.add('in')" />`;
     }
     div.innerHTML = body + `<div class="pv-meta"><button class="pv-del">🗑️</button><div class="pv-fecha">${fechaCorta(f.fecha)} · de ${whoLabel(f.remitente)}</div>${f.mensaje ? `<div class="pv-msg">"${escapeHtml(f.mensaje)}"</div>` : ''}</div>`;
-    div.querySelector('.pv-del').addEventListener('click', () => { if (confirm('¿Borrar?')) removeParaVos(f.id).catch(() => {}); });
+    div.querySelector('.pv-del').addEventListener('click', () => { deferredRemove('paraVos', 'fotos_para_vos', f.id, { label: 'Borrado', paths: f.url ? [f.url] : [] }); });
     div.querySelector('img')?.addEventListener('click', (e) => openLightbox(e.target.dataset.full));
     wrap.appendChild(div);
   });

@@ -4,7 +4,7 @@ import { CONFIG } from '../config.js';
 import { fechaCorta, whoLabel, escapeHtml } from '../lib/format.js';
 import { openCancionModal } from '../ui/layers.js';
 import { spotifyFacade } from '../ui/spotify.js';
-import { removeCancion } from '../services/data.js';
+import { deferredRemove } from '../services/data.js';
 
 function renderCanciones() {
   const wrap = $('#canciones');
@@ -50,7 +50,7 @@ function renderSongList() {
     div.innerHTML = `<div class="song-meta"><span class="song-de">${whoLabel(c.de)}${fecha ? ' · ' + fechaCorta(fecha) : ''}</span><button class="song-del">🗑️</button></div>
       ${c.mensaje ? `<div class="song-msg">"${escapeHtml(c.mensaje)}"</div>` : ''}`;
     div.appendChild(spotifyFacade(c.spotify_id, c.titulo || 'Reproducir'));
-    div.querySelector('.song-del').addEventListener('click', () => { if (confirm('¿Borrar esta canción?')) removeCancion(c.id).catch(() => {}); });
+    div.querySelector('.song-del').addEventListener('click', () => { deferredRemove('canciones', 'canciones', c.id, { label: 'Canción borrada' }); });
     list.appendChild(div);
   });
 }

@@ -2,7 +2,7 @@ import { $ } from '../lib/dom.js';
 import { get, on } from '../store/store.js';
 import { CONFIG } from '../config.js';
 import { fechaCorta, dateStr, hoyStr, escapeHtml } from '../lib/format.js';
-import { openAdventModal } from '../ui/layers.js';
+import { openAdventModal, openLayer } from '../ui/layers.js';
 import { signUrl } from '../services/storage.js';
 import { mountSpotifyFacades } from '../ui/spotify.js';
 import { startReveal } from './cofre.js';
@@ -61,13 +61,13 @@ async function openDoor(fecha) {
     c.innerHTML += `<div class="door-empty">Todavía no hay nada acá para este día… 😉</div>`;
   } else if (entry.tipo === 'foto') {
     const u = await signUrl(entry.url);
-    c.innerHTML += `${entry.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : ''}<img src="${u || ''}" alt="sorpresa" />`;
+    c.innerHTML += `${entry.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : ''}<img src="${u || ''}" alt="sorpresa" class="fade" onload="this.classList.add('in')" />`;
   } else if (entry.tipo === 'cancion') {
     c.innerHTML += `${entry.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : ''}<div class="sp-mount" data-spotify="${entry.url}" data-label="${escapeHtml(entry.titulo || 'Reproducir')}"></div>`;
   } else {
     c.innerHTML += `${entry.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : ''}<div class="door-texto">${escapeHtml(entry.texto || '')}</div>`;
   }
-  $('#door-modal').classList.remove('hidden');
+  openLayer($('#door-modal'));
   mountSpotifyFacades($('#door-content'));
 }
 

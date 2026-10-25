@@ -164,6 +164,27 @@ async function addSignedUrl(path) {
   if (u) set('signedUrls', { ...(get('signedUrls') || {}), [path]: u });
 }
 
+// Borrado diferido: quita optimista, muestra toast con "Deshacer" y commitea al expirar.
+export function deferredRemove(storeKey, table, id, { label = 'Borrado', paths = [] } = {}) {
+  const prev = get(storeKey);
+  set(storeKey, (prev || []).filter((x) => x.id !== id));
+  let committed = false;
+  let finish;
+  const timer = setTimeout(async () => {
+    committed = true;
+    finish?.();
+    try {
+      if (paths.length) await removeFiles(paths);
+      const { error } = await db.from(table).delete().eq('id', id);
+      if (error) { toast.error('No se pudo borrar'); await refetchTable(storeKey); }
+    } catch (e) { toast.error('No se pudo borrar'); await refetchTable(storeKey); }
+  }, 5000);
+  finish = toast.undo(label, () => {
+    clearTimeout(timer);
+    if (!committed) set(storeKey, prev);
+  });
+}
+
 // ---------- Acciones ----------
 export async function saveTextAction(action, texto, extra, id) {
   const who = get('who');
@@ -355,13 +376,6 @@ export function toggleHecho(table, id, value) {
   );
 }
 
-export function removeEntry(table, id) {
-  return mutate(table,
-    (rows) => (rows || []).filter((r) => r.id !== id),
-    () => db.from(table).delete().eq('id', id)
-  );
-}
-
 export function toggleDestacada(id) {
   const f = (get('fotos') || []).find((x) => x.id === id);
   if (!f) return Promise.resolve();
@@ -369,42 +383,6 @@ export function toggleDestacada(id) {
     (rows) => (rows || []).map((r) => (r.id === id ? { ...r, destacada: !f.destacada } : r)),
     () => db.from('fotos').update({ destacada: !f.destacada }).eq('id', id)
   );
-}
-
-export async function removeFoto(id) {
-  const f = (get('fotos') || []).find((x) => x.id === id);
-  if (f && f.url) await removeFiles([f.url].concat(f.thumb ? [f.thumb] : []));
-  const { error } = await db.from('fotos').delete().eq('id', id);
-  if (error) throw error;
-  await refetchTable('fotos');
-}
-
-export async function removeNota(id) {
-  const { error } = await db.from('notas').delete().eq('id', id);
-  if (error) throw error;
-  await refetchTable('notas');
-}
-
-export async function removeDia(id) {
-  const e = (get('fotosDia') || []).find((f) => f.id === id);
-  if (e && e.url) await removeFiles([e.url]);
-  const { error } = await db.from('fotos_dia').delete().eq('id', id);
-  if (error) throw error;
-  await refetchTable('fotosDia');
-}
-
-export async function removeParaVos(id) {
-  const f = (get('paraVos') || []).find((x) => x.id === id);
-  if (f && f.url) await removeFiles([f.url]);
-  const { error } = await db.from('fotos_para_vos').delete().eq('id', id);
-  if (error) throw error;
-  await refetchTable('paraVos');
-}
-
-export async function removeCancion(id) {
-  const { error } = await db.from('canciones').delete().eq('id', id);
-  if (error) throw error;
-  await refetchTable('canciones');
 }
 
 export async function sendEnvio(texto) {

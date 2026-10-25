@@ -2,8 +2,9 @@ import { $, $$ } from '../lib/dom.js';
 import { get, on, set } from '../store/store.js';
 import { MESES, SLOTS, escapeHtml } from '../lib/format.js';
 import { openLightbox, openUploadModal, openTextModal } from '../ui/layers.js';
-import { toggleDestacada, removeFoto, removeNota } from '../services/data.js';
+import { toggleDestacada, deferredRemove } from '../services/data.js';
 import { signMany, signUrl } from '../services/storage.js';
+import { skeleton } from '../ui/skeleton.js';
 
 let albumIO = null;
 
@@ -20,7 +21,7 @@ function mediaTag(foto) {
   const isVideo = (foto.url || '').toLowerCase().endsWith('.mp4');
   if (isVideo) return `<video data-path="${foto.url}" preload="metadata" controls playsinline></video>`;
   const thumb = foto.thumb || foto.url;
-  return `<img data-path="${thumb}" data-full="${foto.url}" loading="lazy" decoding="async" alt="foto" />`;
+  return `<img data-path="${thumb}" data-full="${foto.url}" loading="lazy" decoding="async" alt="foto" class="fade" onload="this.classList.add('in')" />`;
 }
 
 // Firma en lote las fotos de las cards visibles (rootMargin 600px).
@@ -86,6 +87,10 @@ function renderMejores(wrap) {
 
 function renderAlbum() {
   const wrap = $('#album');
+  if (getStatus('fotos') === 'loading' && !(get('fotos') || []).length) {
+    wrap.innerHTML = skeleton(8, '');
+    return;
+  }
   wrap.innerHTML = '';
   if (get('albumMode') === 'mejores') { renderMejores(wrap); setupLazySigning(); return; }
   const fotos = get('fotos') || [];
@@ -123,8 +128,11 @@ function bindAlbumEvents() {
     const a = btn.dataset.action;
     if (a === 'add') openUploadModal({ tipo: 'album', anio: parseInt(btn.dataset.anio), mes: parseInt(btn.dataset.mes), slot: btn.dataset.tipo });
     else if (a === 'note') openNote(btn.dataset.anio, btn.dataset.mes, btn.dataset.tipo);
-    else if (a === 'del') { if (confirm('¿Borrar esta foto?')) removeFoto(btn.dataset.id).catch(() => {}); }
-    else if (a === 'delnote') { if (confirm('¿Borrar esta nota?')) removeNota(btn.dataset.id).catch(() => {}); }
+    else if (a === 'del') {
+      const f = (get('fotos') || []).find((x) => x.id === btn.dataset.id);
+      if (f) deferredRemove('fotos', 'fotos', f.id, { label: 'Foto borrada', paths: [f.url, f.thumb].filter(Boolean) });
+    }
+    else if (a === 'delnote') deferredRemove('notas', 'notas', btn.dataset.id, { label: 'Nota borrada' });
     else if (a === 'star') toggleDestacada(btn.dataset.id).catch(() => {});
   }));
   $$('#album img[data-full]').forEach((img) => img.addEventListener('click', () => {
