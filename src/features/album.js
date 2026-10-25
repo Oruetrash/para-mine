@@ -3,6 +3,9 @@ import { get, on, set } from '../store/store.js';
 import { MESES, SLOTS, escapeHtml } from '../lib/format.js';
 import { openLightbox, openUploadModal, openTextModal } from '../ui/layers.js';
 import { toggleDestacada, removeFoto, removeNota } from '../services/data.js';
+import { signMany, signUrl } from '../services/storage.js';
+
+let albumIO = null;
 
 function getMonths() {
   const now = new Date();
@@ -14,11 +17,30 @@ function getMonths() {
 }
 
 function mediaTag(foto) {
-  const urls = get('signedUrls') || {};
-  const url = urls[foto.url] || '';
   const isVideo = (foto.url || '').toLowerCase().endsWith('.mp4');
-  if (isVideo) return `<video src="${url}" controls playsinline></video>`;
-  return `<img src="${url}" alt="foto" loading="lazy" data-full="${url}" />`;
+  if (isVideo) return `<video data-path="${foto.url}" preload="metadata" controls playsinline></video>`;
+  const thumb = foto.thumb || foto.url;
+  return `<img data-path="${thumb}" data-full="${foto.url}" loading="lazy" decoding="async" alt="foto" />`;
+}
+
+// Firma en lote las fotos de las cards visibles (rootMargin 600px).
+function setupLazySigning() {
+  if (albumIO) albumIO.disconnect();
+  albumIO = new IntersectionObserver((entries) => {
+    const cards = entries.filter((e) => e.isIntersecting).map((e) => e.target);
+    if (!cards.length) return;
+    const paths = new Set();
+    cards.forEach((card) => card.querySelectorAll('[data-path]').forEach((m) => { if (!m.src) paths.add(m.dataset.path); }));
+    cards.forEach((card) => albumIO.unobserve(card));
+    if (!paths.size) return;
+    signMany([...paths]).then((map) => {
+      cards.forEach((card) => card.querySelectorAll('[data-path]').forEach((m) => {
+        const u = map[m.dataset.path];
+        if (u && !m.src) m.src = u;
+      }));
+    }).catch(() => {});
+  }, { rootMargin: '600px' });
+  $$('#album .month-card, #album .mejor-card').forEach((c) => albumIO.observe(c));
 }
 
 function renderSlot(anio, mes, tipo, label, icono, foto, nota) {
@@ -65,7 +87,7 @@ function renderMejores(wrap) {
 function renderAlbum() {
   const wrap = $('#album');
   wrap.innerHTML = '';
-  if (get('albumMode') === 'mejores') { renderMejores(wrap); return; }
+  if (get('albumMode') === 'mejores') { renderMejores(wrap); setupLazySigning(); return; }
   const fotos = get('fotos') || [];
   const notas = get('notas') || [];
   const fotosPorClave = {}, notasPorClave = {};
@@ -93,6 +115,7 @@ function renderAlbum() {
     wrap.appendChild(card);
   });
   bindAlbumEvents();
+  setupLazySigning();
 }
 
 function bindAlbumEvents() {
@@ -104,7 +127,10 @@ function bindAlbumEvents() {
     else if (a === 'delnote') { if (confirm('¿Borrar esta nota?')) removeNota(btn.dataset.id).catch(() => {}); }
     else if (a === 'star') toggleDestacada(btn.dataset.id).catch(() => {});
   }));
-  $$('#album img').forEach((img) => img.addEventListener('click', () => openLightbox(img.dataset.full)));
+  $$('#album img[data-full]').forEach((img) => img.addEventListener('click', () => {
+    const full = img.dataset.full;
+    if (full) signUrl(full).then((u) => { if (u) openLightbox(u); }).catch(() => {});
+  }));
 }
 
 function openNote(anio, mes, tipo) {
@@ -119,6 +145,5 @@ export function initAlbum() {
   }));
   on('fotos', renderAlbum);
   on('notas', renderAlbum);
-  on('signedUrls', renderAlbum);
   on('albumMode', renderAlbum);
 }

@@ -6,7 +6,7 @@ export function initParticles() {
   breathe.id = 'breathe';
   document.body.prepend(breathe);
   const bg = $('#particles-bg');
-  for (let i = 0; i < 22; i++) {
+  for (let i = 0; i < 8; i++) {
     const m = document.createElement('span');
     m.className = 'mote';
     m.style.left = Math.random() * 100 + 'vw';

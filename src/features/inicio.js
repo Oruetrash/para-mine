@@ -7,6 +7,9 @@ import { openLightbox } from '../ui/layers.js';
 export function startCountdown() {
   const target = CONFIG.CUMPLE.getTime();
   const tick = () => {
+    if (document.hidden) return;
+    const view = $('#view-inicio');
+    if (view && !view.classList.contains('active')) return;
     let diff = target - Date.now();
     if (diff < 0) diff = 0;
     $('#cd-dias').textContent = Math.floor(diff / 86400000);
@@ -36,9 +39,8 @@ export function renderTimeline() {
 
 export function renderRecuerdo() {
   const wrap = $('#recuerdo-del-dia');
-  const fotos = (get('fotos') || []).filter((f) => !(f.url || '').toLowerCase().endsWith('.mp4'));
-  if (fotos.length === 0) { wrap.innerHTML = ''; return; }
-  const f = fotos[Math.floor(Math.random() * fotos.length)];
+  const f = get('recuerdo');
+  if (!f) { wrap.innerHTML = ''; return; }
   const urls = get('signedUrls') || {};
   wrap.innerHTML = `<div class="rec-label">Recuerdo del día</div>
     <img src="${urls[f.url] || ''}" data-full="${urls[f.url] || ''}" />
@@ -47,7 +49,7 @@ export function renderRecuerdo() {
 }
 
 export function initInicio() {
-  on('fotos', renderRecuerdo);
+  on('recuerdo', renderRecuerdo);
   on('signedUrls', renderRecuerdo);
 }
 

@@ -1,3 +1,9 @@
+import '@fontsource-variable/jost';
+import '@fontsource/cormorant-garamond/500.css';
+import '@fontsource/cormorant-garamond/600.css';
+import '@fontsource/cormorant-garamond/700.css';
+import '@fontsource/cormorant-garamond/500-italic.css';
+import '@fontsource/pinyon-script/400.css';
 import '../css/style.css';
 import { set, get } from './store/store.js';
 import { $ } from './lib/dom.js';
@@ -7,7 +13,8 @@ import { initLayers } from './ui/layers.js';
 import { initRouter, renderMasMenu } from './ui/router.js';
 import { initPush, initRealtime } from './services/push.js';
 import { checkSession, resolveServer, showLogin, initLogin } from './services/auth.js';
-import { loadData, refetchTable } from './services/data.js';
+import { ensure, refetchTable, refetchTeQuiero } from './services/data.js';
+import { clearSignedCache } from './services/storage.js';
 import { initInicio, bootInicio } from './features/inicio.js';
 import { initAlbum } from './features/album.js';
 import { initHoy } from './features/hoy.js';
@@ -29,6 +36,9 @@ set('advTipo', 'texto');
 set('propuesta', null);
 set('serverWho', null);
 set('serverToday', null);
+set('teQuieroCount', 0);
+set('teQuieroToday', 0);
+set('stats', {});
 
 async function showApp() {
   $('#login-screen').classList.add('hidden');
@@ -38,11 +48,14 @@ async function showApp() {
   await resolveServer();
   renderMasMenu();
   initPush(get('who'));
-  initRealtime(refetchTable);
-  await loadData();
+  initRealtime({ onTeQuiero: refetchTeQuiero, onMensajes: () => refetchTable('mensajes') });
+  await ensure('inicio');
 }
 
 async function bootstrap() {
+  document.addEventListener('visibilitychange', () =>
+    document.documentElement.classList.toggle('paused', document.hidden));
+
   initParticles();
   initLayers();
   initRouter();
@@ -63,7 +76,7 @@ async function bootstrap() {
 
   const ok = await checkSession();
   if (ok) await showApp();
-  else showLogin();
+  else { clearSignedCache(); showLogin(); }
 }
 
 bootstrap();

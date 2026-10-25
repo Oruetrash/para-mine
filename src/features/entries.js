@@ -99,8 +99,8 @@ function renderArte() {
 
 function renderTeQuiero() {
   const wrap = $('#tequiero');
-  const count = (get('teQuiero') || []).length;
-  const hoy = (get('teQuiero') || []).filter((t) => ((t.creado_en || '').slice(0, 10)) === todayStr()).length;
+  const count = get('teQuieroCount') || 0;
+  const hoy = get('teQuieroToday') || 0;
   wrap.innerHTML = `<div class="tq-wrap">
     <div class="tq-count">${count}</div>
     <p class="section-sub" style="margin:4px 0 16px">"te quiero" enviados</p>
@@ -176,6 +176,7 @@ export function initEntries() {
   on('signedUrls', renderArte);
   on('arte.status', renderArte);
 
-  on('teQuiero', renderTeQuiero);
+  on('teQuieroCount', renderTeQuiero);
+  on('teQuieroToday', renderTeQuiero);
   on('mood', renderMood);
 }

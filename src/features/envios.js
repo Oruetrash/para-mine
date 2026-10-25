@@ -41,7 +41,7 @@ function renderEnvios() {
       card.innerHTML = `<div class="env-tag">${m.tipo === 'quiz' ? '🎯 Quiz de ' : '💌 Mensaje de '}${whoLabel(m.de)} · ${fechaCorta(m.fecha)}</div>
         <div class="env-texto">"${escapeHtml(m.texto)}"</div>
         ${m.respuesta ? `<div class="env-respuesta">↳ ${escapeHtml(m.respuesta)}</div>` : ''}`;
-      if (m.tipo === 'quiz' && !m.respuesta && who === para) {
+      if (m.tipo === 'quiz' && !m.respuesta) {
         const btn = document.createElement('button');
         btn.className = 'btn-big ghost';
         btn.textContent = 'Responder';

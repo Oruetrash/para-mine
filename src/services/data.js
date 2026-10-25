@@ -1,73 +1,141 @@
 import { db } from '../lib/supabase.js';
 import { CONFIG } from '../config.js';
 import { get, set, setStatus } from '../store/store.js';
-import { todayStr, whoLabel, extractSpotifyId, sanitizeBase } from '../lib/format.js';
-import { REPOS, ORDERS, fotosRepo, notasRepo, fotosDiaRepo, paraVosRepo, mensajesRepo, arteRepo, teQuieroRepo, advientoRepo, propuestaRepo } from './repo.js';
-import { signUrls, signUrl, uploadFile, removeFiles } from './storage.js';
+import { todayStr, dateStr, whoLabel, extractSpotifyId, sanitizeBase } from '../lib/format.js';
+import { REPOS, fotosRepo, notasRepo, fotosDiaRepo, paraVosRepo, mensajesRepo, arteRepo, advientoRepo, propuestaRepo } from './repo.js';
+import { signMany, signUrl, uploadFile, removeFiles } from './storage.js';
 import { sendPush } from './push.js';
 import { toast } from '../ui/toast.js';
+import { toJpeg } from '../lib/images.js';
 
-// ---------- Carga ----------
-let loadToken = 0;
-const ALL_TABLES = Object.keys(REPOS);
+// ---------- Carga condicional por vista ----------
+const daysAgo = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return dateStr(d); };
 
-export async function loadData() {
-  const token = ++loadToken;
-  setStatus('app', 'loading');
-  ALL_TABLES.forEach((t) => setStatus(t, 'loading'));
-  try {
-    const [fotos, notas, fotosDia, paraVos, mensajes, razones, arte, teQuiero, diario, planes, capsula, cartas, lugares, reto, mood, adviento, canciones] = await Promise.all([
-      fotosRepo.list((q) => q.order('creado_en')),
-      notasRepo.list((q) => q.order('creado_en')),
-      fotosDiaRepo.list((q) => q.order('fecha')),
-      paraVosRepo.list(),
-      mensajesRepo.list(),
-      REPOS.razones.list(),
-      arteRepo.list(),
-      teQuieroRepo.list(),
-      REPOS.diario.list(),
-      REPOS.planes.list(),
-      REPOS.capsula.list((q) => q.order('abre_en')),
-      REPOS.cartas.list(),
-      REPOS.lugares.list(),
-      REPOS.reto.list(),
-      REPOS.mood.list(),
-      advientoRepo.list((q) => q.order('fecha')),
-      REPOS.canciones.list(),
-    ]);
-    const propuesta = await propuestaRepo.list((q) => q.eq('id', 1)).then((r) => r[0] || null);
-    if (token !== loadToken) return;
+const FILTERS = {
+  fotos: (q) => q.order('creado_en'),
+  notas: (q) => q.order('creado_en'),
+  fotosDia: (q) => q.gte('fecha', daysAgo(14)),
+  mensajes: (q) => q.eq('de', get('who') === 'el' ? 'ella' : 'el').order('creado_en', { ascending: false }).limit(10),
+  capsula: (q) => q.order('abre_en'),
+  adviento: (q) => q.order('fecha'),
+  mood: (q) => q.eq('fecha', todayStr()),
+};
 
-    set('fotos', fotos); set('notas', notas); set('fotosDia', fotosDia); set('paraVos', paraVos);
-    set('mensajes', mensajes); set('razones', razones); set('arte', arte); set('teQuiero', teQuiero);
-    set('diario', diario); set('planes', planes); set('capsula', capsula); set('cartas', cartas);
-    set('lugares', lugares); set('reto', reto); set('mood', mood); set('adviento', adviento);
-    set('canciones', canciones); set('propuesta', propuesta);
-
-    const paths = new Set();
-    [...fotos, ...fotosDia, ...paraVos, ...arte].forEach((f) => { if (f.url) paths.add(f.url); });
-    adviento.forEach((a) => { if (a.tipo === 'foto' && a.url) paths.add(a.url); });
-    const urls = await signUrls(paths);
-    if (token !== loadToken) return;
-
-    set('signedUrls', urls);
-    ALL_TABLES.forEach((t) => setStatus(t, 'ready'));
-    setStatus('app', 'ready');
-  } catch (e) {
-    if (token === loadToken) {
-      ALL_TABLES.forEach((t) => setStatus(t, 'error'));
-      setStatus('app', 'error');
-      toast.error(e.message || 'No se pudo cargar');
-    }
-  }
+async function fetchInto(table, query) {
+  setStatus(table, 'loading');
+  const rows = await REPOS[table].list(query);
+  set(table, rows);
+  setStatus(table, 'ready');
+  return rows;
 }
+
+async function signInto(paths) {
+  const arr = [...new Set(paths)].filter(Boolean);
+  if (!arr.length) return;
+  const map = await signMany(arr);
+  set('signedUrls', { ...(get('signedUrls') || {}), ...map });
+}
+
+async function countOf(table) {
+  const { count } = await db.from(table).select('*', { count: 'exact', head: true });
+  return count || 0;
+}
+
+async function loadTeQuiero() {
+  setStatus('teQuiero', 'loading');
+  const [{ count: total }, hoyRes] = await Promise.all([
+    db.from('te_quiero').select('*', { count: 'exact', head: true }),
+    db.from('te_quiero').select('*', { count: 'exact', head: true }).gte('creado_en', todayStr()),
+  ]);
+  set('teQuieroCount', total || 0);
+  set('teQuieroToday', hoyRes.count || 0);
+  setStatus('teQuiero', 'ready');
+}
+
+const loaders = {
+  historia: () => Promise.resolve(),
+  inicio: async () => {
+    const fotos = await fotosRepo.list(FILTERS.fotos);
+    set('fotos', fotos);
+    setStatus('fotos', 'ready');
+    const cand = fotos.filter((f) => !(f.url || '').toLowerCase().endsWith('.mp4'));
+    if (cand.length) {
+      const foto = cand[Math.floor(Math.random() * cand.length)];
+      set('recuerdo', foto);
+      await signInto([foto.url]);
+    }
+  },
+  hoy: async () => {
+    const [fotosDia, mensajes, paraVos] = await Promise.all([
+      fotosDiaRepo.list(FILTERS.fotosDia),
+      mensajesRepo.list(FILTERS.mensajes),
+      paraVosRepo.list(),
+    ]);
+    set('fotosDia', fotosDia); set('mensajes', mensajes); set('paraVos', paraVos);
+    setStatus('fotosDia', 'ready'); setStatus('mensajes', 'ready'); setStatus('paraVos', 'ready');
+    const urls = new Set();
+    fotosDia.forEach((f) => f.url && urls.add(f.url));
+    paraVos.forEach((f) => f.url && urls.add(f.url));
+    await signInto(urls);
+  },
+  album: async () => {
+    const [fotos, notas] = await Promise.all([fotosRepo.list(FILTERS.fotos), notasRepo.list(FILTERS.notas)]);
+    set('fotos', fotos); set('notas', notas);
+    setStatus('fotos', 'ready'); setStatus('notas', 'ready');
+  },
+  cofre: async () => {
+    const [adviento, propuesta] = await Promise.all([
+      advientoRepo.list(FILTERS.adviento),
+      propuestaRepo.list((q) => q.eq('id', 1)).then((r) => r[0] || null),
+    ]);
+    set('adviento', adviento); set('propuesta', propuesta);
+    setStatus('adviento', 'ready');
+  },
+  canciones: async () => { await fetchInto('canciones'); },
+  razones: async () => { await fetchInto('razones'); },
+  diario: async () => { await fetchInto('diario'); },
+  planes: async () => { await fetchInto('planes'); },
+  reto: async () => { await fetchInto('reto'); },
+  cartas: async () => { await fetchInto('cartas'); },
+  capsula: async () => { await fetchInto('capsula', FILTERS.capsula); },
+  lugares: async () => { await fetchInto('lugares'); },
+  arte: async () => {
+    const rows = await arteRepo.list();
+    set('arte', rows); setStatus('arte', 'ready');
+    await signInto(rows.map((a) => a.url));
+  },
+  tequiero: loadTeQuiero,
+  mood: async () => { await fetchInto('mood', FILTERS.mood); },
+  creador: async () => {
+    const [adviento, stats] = await Promise.all([
+      advientoRepo.list(FILTERS.adviento),
+      Promise.all([countOf('fotos'), countOf('fotos_dia'), countOf('fotos_para_vos'), countOf('mensajes_diarios'), countOf('te_quiero'), countOf('razones')]),
+    ]);
+    set('adviento', adviento); setStatus('adviento', 'ready');
+    set('stats', { fotos: stats[0], fotosDia: stats[1], paraVos: stats[2], mensajes: stats[3], teQuiero: stats[4], razones: stats[5] });
+  },
+};
+
+const loaded = new Map();
+
+export function ensure(view) {
+  if (!loaders[view]) return Promise.resolve();
+  if (!loaded.has(view)) {
+    const p = loaders[view]().catch((e) => { loaded.delete(view); throw e; });
+    loaded.set(view, p);
+  }
+  return loaded.get(view);
+}
+
+export function invalidate(view) { loaded.delete(view); }
+export function invalidateAll() { loaded.clear(); }
 
 export async function refetchTable(t) {
   const r = REPOS[t];
   if (!r) return;
   setStatus(t, 'loading');
   try {
-    const rows = await r.list(ORDERS[t]);
+    const rows = await r.list(FILTERS[t]);
     set(t, rows);
     setStatus(t, 'ready');
   } catch (e) {
@@ -75,6 +143,8 @@ export async function refetchTable(t) {
     throw e;
   }
 }
+
+export async function refetchTeQuiero() { await loadTeQuiero(); }
 
 // Mutación optimista: aplica `optimistic`, corre `remote`, y revierte si falla.
 export async function mutate(table, optimistic, remote) {
@@ -166,10 +236,31 @@ export async function doUpload(ctx, file) {
     insert = () => db.from('arte').insert({ url: storagePath, titulo: file.name.replace(/\.[^.]+$/, '') });
     table = 'arte';
   } else {
+    // Álbum: para imágenes generamos full (2048) + thumb (480) y guardamos ambos.
     const { anio, mes, slot } = ctx;
+    table = 'fotos';
+    if (file.type && file.type.startsWith('image/')) {
+      let full = null, thumb = null;
+      try { [full, thumb] = await Promise.all([toJpeg(file, 2048, 0.82), toJpeg(file, 480, 0.75)]); } catch (e) {}
+      if (full) {
+        const stamp = Date.now();
+        const fullPath = `${anio}/${mes}/${slot}/${safe}_${stamp}.jpg`;
+        const { error: upErr } = await uploadFile(fullPath, full, 'image/jpeg');
+        if (upErr) throw upErr;
+        let thumbPath = null;
+        if (thumb) {
+          thumbPath = `thumbs/${anio}/${mes}/${slot}/${safe}_${stamp}.jpg`;
+          const { error: tErr } = await uploadFile(thumbPath, thumb, 'image/jpeg');
+          if (tErr) throw tErr;
+        }
+        const { error: inErr } = await db.from('fotos').insert({ anio, mes, tipo: slot, url: fullPath, thumb: thumbPath, subido_por: 'app' });
+        if (inErr) throw inErr;
+        await refetchTable('fotos');
+        return;
+      }
+    }
     storagePath = `${anio}/${mes}/${slot}/${safe}_${Date.now()}${ext}`;
     insert = () => db.from('fotos').insert({ anio, mes, tipo: slot, url: storagePath, subido_por: 'app' });
-    table = 'fotos';
   }
   const { error: upErr } = await uploadFile(storagePath, file, ct);
   if (upErr) throw upErr;
@@ -202,7 +293,12 @@ export async function saveLugar(nombre, desc, ubic) {
 export async function saveCancion(link, msg) {
   const id = extractSpotifyId(link);
   if (!id) throw new Error('Pegá un link de Spotify válido');
-  const { error } = await db.from('canciones').insert({ spotify_id: id, de: get('who'), mensaje: msg || null });
+  let titulo = null;
+  try {
+    const res = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent('https://open.spotify.com/track/' + id)}`);
+    if (res.ok) { const j = await res.json(); titulo = j.title || null; }
+  } catch (e) {}
+  const { error } = await db.from('canciones').insert({ spotify_id: id, de: get('who'), mensaje: msg || null, titulo });
   if (error) throw error;
   await refetchTable('canciones');
   const para = get('who') === 'el' ? 'ella' : 'el';
@@ -241,7 +337,7 @@ export async function saveAdviento(fecha, tipo, titulo, texto, url, file, existi
 export async function sendTeQuiero() {
   const { error } = await db.from('te_quiero').insert({ autor: get('who') });
   if (error) throw error;
-  await refetchTable('teQuiero');
+  await loadTeQuiero();
   const para = get('who') === 'el' ? 'ella' : 'el';
   sendPush(para, '❤️', 'Alguien te mandó un "te quiero".');
 }
@@ -277,7 +373,7 @@ export function toggleDestacada(id) {
 
 export async function removeFoto(id) {
   const f = (get('fotos') || []).find((x) => x.id === id);
-  if (f && f.url) await removeFiles([f.url]);
+  if (f && f.url) await removeFiles([f.url].concat(f.thumb ? [f.thumb] : []));
   const { error } = await db.from('fotos').delete().eq('id', id);
   if (error) throw error;
   await refetchTable('fotos');

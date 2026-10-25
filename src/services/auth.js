@@ -2,6 +2,15 @@ import { db } from '../lib/supabase.js';
 import { CONFIG } from '../config.js';
 import { get, set } from '../store/store.js';
 import { $, $$ } from '../lib/dom.js';
+import { clearSignedCache } from './storage.js';
+import { invalidateAll } from './data.js';
+
+export async function logout() {
+  await db.auth.signOut();
+  clearSignedCache();
+  invalidateAll();
+  location.reload();
+}
 
 // Quién soy y qué fecha es, según el servidor (no el dispositivo).
 export async function resolveServer() {

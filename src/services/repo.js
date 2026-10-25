@@ -31,11 +31,3 @@ export const REPOS = {
   diario: T.diario, planes: T.planes, capsula: T.capsula, cartas: T.cartas,
   lugares: T.lugares, reto: T.reto, mood: T.mood, adviento: advientoRepo, canciones: T.canciones,
 };
-
-export const ORDERS = {
-  fotos: (q) => q.order('creado_en'),
-  notas: (q) => q.order('creado_en'),
-  fotosDia: (q) => q.order('fecha'),
-  capsula: (q) => q.order('abre_en'),
-  adviento: (q) => q.order('fecha'),
-};

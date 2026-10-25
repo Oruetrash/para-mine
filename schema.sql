@@ -279,3 +279,7 @@ begin
   alter publication supabase_realtime add table public.mensajes_diarios;
 exception when duplicate_object then null;
 end $$;
+
+-- ---------- 7) Performance: thumbnail del álbum ----------
+-- Columna para el thumb de la grilla (el full se firma solo al abrir el lightbox).
+alter table public.fotos add column if not exists thumb text;

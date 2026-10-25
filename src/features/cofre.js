@@ -3,6 +3,7 @@ import { get } from '../store/store.js';
 import { CONFIG } from '../config.js';
 import { MESES, escapeHtml } from '../lib/format.js';
 import { answerProposal } from '../services/data.js';
+import { mountSpotifyFacades } from '../ui/spotify.js';
 
 export function startReveal() {
   const p = get('propuesta');
@@ -71,7 +72,8 @@ async function celebrate() {
 function showCelebration() {
   const p = get('propuesta') || {};
   $('#view-cofre').innerHTML = `<div class="final-msg"><div class="big">❤️🎉❤️</div><h3>${escapeHtml(p.final || '')}</h3><p>Desde hoy, oficialmente… nuestros. Te amo, ${CONFIG.NOMBRE}.</p>
-    <div style="margin-top:16px"><iframe src="https://open.spotify.com/embed/track/${CONFIG.CANCION_CELEBRACION}" width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" style="border-radius:14px"></iframe></div></div>`;
+    <div style="margin-top:16px" class="sp-mount" data-spotify="${CONFIG.CANCION_CELEBRACION}" data-label="Nuestra canción"></div></div>`;
+  mountSpotifyFacades($('#view-cofre'));
   launchConfetti();
 }
 

@@ -3,6 +3,8 @@ import { get, on } from '../store/store.js';
 import { CONFIG } from '../config.js';
 import { fechaCorta, dateStr, hoyStr, escapeHtml } from '../lib/format.js';
 import { openAdventModal } from '../ui/layers.js';
+import { signUrl } from '../services/storage.js';
+import { mountSpotifyFacades } from '../ui/spotify.js';
 import { startReveal } from './cofre.js';
 
 function previewCumple() {
@@ -50,22 +52,23 @@ function renderCalendario() {
   wrap.querySelectorAll('.cal-door[data-day]').forEach((b) => b.addEventListener('click', () => openDoor(b.dataset.day)));
 }
 
-function openDoor(fecha) {
+async function openDoor(fecha) {
   if (fecha === dateStr(CONFIG.CUMPLE)) { startReveal(); return; }
   const entry = (get('adviento') || []).find((a) => a.fecha === fecha);
-  const urls = get('signedUrls') || {};
   const c = $('#door-content');
   c.innerHTML = `<div class="door-fecha">${fechaCorta(fecha)}</div>`;
   if (!entry) {
     c.innerHTML += `<div class="door-empty">Todavía no hay nada acá para este día… 😉</div>`;
   } else if (entry.tipo === 'foto') {
-    c.innerHTML += `${entry.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : ''}<img src="${urls[entry.url] || ''}" alt="sorpresa" />`;
+    const u = await signUrl(entry.url);
+    c.innerHTML += `${entry.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : ''}<img src="${u || ''}" alt="sorpresa" />`;
   } else if (entry.tipo === 'cancion') {
-    c.innerHTML += `${entry.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : ''}<iframe src="https://open.spotify.com/embed/track/${entry.url}" width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`;
+    c.innerHTML += `${entry.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : ''}<div class="sp-mount" data-spotify="${entry.url}" data-label="${escapeHtml(entry.titulo || 'Reproducir')}"></div>`;
   } else {
     c.innerHTML += `${entry.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : ''}<div class="door-texto">${escapeHtml(entry.texto || '')}</div>`;
   }
   $('#door-modal').classList.remove('hidden');
+  mountSpotifyFacades($('#door-content'));
 }
 
 export function renderAdventAdmin() {
@@ -97,7 +100,6 @@ export function renderAdventAdmin() {
 
 export function initAdviento() {
   on('adviento', renderCalendario);
-  on('signedUrls', renderCalendario);
   on('serverToday', renderCalendario);
   on('serverWho', renderCalendario);
   on('adviento', renderAdventAdmin);

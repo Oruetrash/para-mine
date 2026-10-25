@@ -15,7 +15,7 @@
 
 html, body {
   height: 100%;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Jost Variable', 'Jost', sans-serif;
   font-weight: 400;
   color: var(--texto);
   background: #f4ece1;
@@ -39,10 +39,11 @@ html, body {
   0%,100% { transform: scale(1) translateY(0); opacity: .9; }
   50% { transform: scale(1.06) translateY(-1.5%); opacity: 1; }
 }
-#particles-bg { position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+#particles-bg { position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; contain: strict; }
 .mote {
-  position: absolute; bottom: -20px; width: 4px; height: 4px; border-radius: 50%;
-  background: var(--dorado); opacity: 0; filter: blur(1px);
+  position: absolute; bottom: -20px; width: 6px; height: 6px; border-radius: 50%;
+  background: radial-gradient(circle, var(--dorado) 0%, transparent 70%);
+  opacity: 0;
   animation: moteUp linear infinite;
 }
 @keyframes moteUp {
@@ -97,7 +98,7 @@ html, body {
 #nav {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
   display: flex; justify-content: space-around; align-items: stretch;
-  background: rgba(253,248,241,.95); backdrop-filter: blur(12px);
+  background: rgba(253,248,241,.97);
   border-top: 1px solid rgba(109,31,38,.12); padding: 6px 2px calc(6px + env(safe-area-inset-bottom));
 }
 .nav-btn {
@@ -231,7 +232,7 @@ html, body {
 .dot.d1 { background: var(--rojo2); }
 .dot.d2 { background: var(--terracota); }
 .dot.d3 { background: var(--dorado); }
-.month-card { background: var(--crema-claro); border-radius: 20px; padding: 16px; margin-bottom: 18px; box-shadow: var(--sombra); }
+.month-card { background: var(--crema-claro); border-radius: 20px; padding: 16px; margin-bottom: 18px; box-shadow: var(--sombra); content-visibility: auto; contain-intrinsic-size: auto 420px; }
 .month-card .month-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
 .month-card .month-head h3 { color: var(--rojo); font-size: 21px; font-family: 'Cormorant Garamond', serif; font-weight: 600; }
 .month-card .month-head .year { color: var(--marron-claro); font-size: 13px; font-weight: 600; }
@@ -430,3 +431,17 @@ html, body {
 /* ---------- Skeleton ---------- */
 .skeleton { height: 60px; border-radius: 16px; margin-bottom: 10px; background: linear-gradient(90deg, #eadcc8 25%, #f3e6d2 50%, #eadcc8 75%); background-size: 200% 100%; animation: skShine 1.2s infinite; }
 @keyframes skShine { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* ---------- Spotify facade ---------- */
+.sp-facade { width: 100%; height: 152px; border-radius: 12px; border: 0; background: var(--marron); color: #fff; display: flex; align-items: center; gap: 12px; padding: 0 18px; font: inherit; cursor: pointer; margin: 4px 0; }
+.sp-facade .sp-play { width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,.18); display: inline-flex; align-items: center; justify-content: center; font-size: 16px; flex: none; }
+.sp-facade .sp-t { font-family: 'Jost Variable', 'Jost', sans-serif; font-weight: 500; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Placeholder de imágenes lazy ---------- */
+#album img[data-path], #album video[data-path] { background: #eadcc8; min-height: 120px; width: 100%; }
+
+/* ---------- Pausa de animaciones ---------- */
+.paused *, .paused *::before { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before { animation: none !important; transition: none !important; }
+}
