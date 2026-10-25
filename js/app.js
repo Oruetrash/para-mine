@@ -15,8 +15,10 @@ const state = {
   fotos: [], notas: [], fotosDia: [], paraVos: [], mensajes: [],
   razones: [], arte: [], teQuiero: [], diario: [], planes: [],
   capsula: [], cartas: [], lugares: [], reto: [], mood: [],
-  signedUrls: {}, pvTab: 'el', albumMode: 'mes', pvWho: 'el',
+  adviento: [], canciones: [],
+  signedUrls: {}, pvTab: 'el', albumMode: 'mes', pvWho: 'el', songTab: 'todos',
   who: localStorage.getItem('who') || 'el', envTipo: 'mensaje',
+  advFecha: null, advTipo: 'texto',
 };
 
 const $ = (s) => document.querySelector(s);
@@ -45,6 +47,14 @@ function pickN(arr, n) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
   return a.slice(0, n);
+}
+function dateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function extractSpotifyId(input) {
+  const s = (input || '').trim();
+  const m = s.match(/track\/([A-Za-z0-9]+)/) || s.match(/^([A-Za-z0-9]{22})$/);
+  return m ? m[1] : null;
 }
 
 // ---------- Fondo: motas sutiles ----------
@@ -125,7 +135,7 @@ async function showApp() {
   startCountdown();
   renderTimeline();
   renderCanciones();
-  renderCofre();
+  renderCalendario();
   renderMasMenu();
   renderDiasJuntos();
   await loadData();
@@ -148,6 +158,7 @@ function go(view) {
   $$('.view').forEach((v) => v.classList.remove('active'));
   const el = $('#view-' + view);
   if (el) el.classList.add('active');
+  if (view === 'cofre' && !$('#calendario')) renderCalendario();
   window.scrollTo({ top: 0 });
 }
 
@@ -228,6 +239,49 @@ function renderCanciones() {
     });
     wrap.appendChild(div);
   });
+
+  // Canciones que se agregan entre los dos
+  wrap.insertAdjacentHTML('beforeend', '<div class="divider"><span>🎧</span></div><h3 class="script sub-heading">Nuestras canciones</h3>');
+  wrap.insertAdjacentHTML('beforeend', '<button class="add-btn" id="add-cancion">+ Agregar una canción</button>');
+  wrap.insertAdjacentHTML('beforeend', '<div class="songs-tabs"><button class="song-tab active" data-st="todos">Todas</button><button class="song-tab" data-st="de-ella">De ella</button><button class="song-tab" data-st="mias">Las que dediqué</button></div>');
+  wrap.insertAdjacentHTML('beforeend', '<div id="songs-list"></div>');
+  $('#add-cancion').addEventListener('click', () => {
+    $('#cancion-link').value = '';
+    $('#cancion-msg').value = '';
+    $('#cancion-modal').classList.remove('hidden');
+  });
+  wrap.querySelectorAll('.songs-tabs .song-tab').forEach((t) => t.addEventListener('click', () => {
+    state.songTab = t.dataset.st;
+    renderSongList();
+  }));
+  renderSongList();
+}
+function renderSongList() {
+  const list = $('#songs-list');
+  if (!list) return;
+  $$('.songs-tabs .song-tab').forEach((t) => t.classList.toggle('active', t.dataset.st === state.songTab));
+  const items = state.canciones.filter((c) => {
+    if (state.songTab === 'de-ella') return c.de === 'ella';
+    if (state.songTab === 'mias') return c.de === state.who;
+    return true;
+  }).slice().reverse();
+  list.innerHTML = '';
+  if (!items.length) { list.innerHTML = '<p class="pv-empty">Todavía no hay canciones acá. 🎵</p>'; return; }
+  items.forEach((c) => {
+    const div = document.createElement('div');
+    div.className = 'song-item';
+    const fecha = (c.creado_en || '').slice(0, 10);
+    div.innerHTML = `<div class="song-meta"><span class="song-de">${whoLabel(c.de)}${fecha ? ' · ' + fechaCorta(fecha) : ''}</span><button class="song-del">🗑️</button></div>
+      ${c.mensaje ? `<div class="song-msg">"${escapeHtml(c.mensaje)}"</div>` : ''}
+      <iframe src="https://open.spotify.com/embed/track/${c.spotify_id}" width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`;
+    div.querySelector('.song-del').addEventListener('click', () => deleteCancion(c.id));
+    list.appendChild(div);
+  });
+}
+async function deleteCancion(id) {
+  if (!confirm('¿Borrar esta canción?')) return;
+  await db.from('canciones').delete().eq('id', id);
+  loadData();
 }
 
 // ---------- Carga de datos ----------
@@ -236,7 +290,7 @@ async function fetchTable(name, order) {
   return (!error && data) ? data : [];
 }
 async function loadData() {
-  const [fotos, notas, fotosDia, paraVos, mensajes, razones, arte, teQuiero, diario, planes, capsula, cartas, lugares, reto, mood] = await Promise.all([
+  const [fotos, notas, fotosDia, paraVos, mensajes, razones, arte, teQuiero, diario, planes, capsula, cartas, lugares, reto, mood, adviento, canciones] = await Promise.all([
     fetchTable('fotos', 'creado_en'),
     fetchTable('notas', 'creado_en'),
     fetchTable('fotos_dia', 'fecha'),
@@ -252,11 +306,14 @@ async function loadData() {
     fetchTable('lugares'),
     fetchTable('reto'),
     fetchTable('mood'),
+    fetchTable('adviento', 'fecha'),
+    fetchTable('canciones'),
   ]);
-  Object.assign(state, { fotos, notas, fotosDia, paraVos, mensajes, razones, arte, teQuiero, diario, planes, capsula, cartas, lugares, reto, mood });
+  Object.assign(state, { fotos, notas, fotosDia, paraVos, mensajes, razones, arte, teQuiero, diario, planes, capsula, cartas, lugares, reto, mood, adviento, canciones });
 
   const paths = new Set();
   [...state.fotos, ...state.fotosDia, ...state.paraVos, ...state.arte].forEach((f) => { if (f.url) paths.add(f.url); });
+  state.adviento.forEach((a) => { if (a.tipo === 'foto' && a.url) paths.add(a.url); });
   await Promise.all([...paths].map(async (p) => {
     const { data } = await db.storage.from('fotos').createSignedUrl(p, 604800);
     if (data) state.signedUrls[p] = data.signedUrl;
@@ -278,6 +335,7 @@ async function loadData() {
   renderMood();
   renderCreador();
   renderRecuerdo();
+  renderCalendario();
 }
 
 // ---------- Recuerdo del día ----------
@@ -575,26 +633,55 @@ function renderParaVos() {
   const add = document.createElement('button');
   add.className = 'pv-add-btn';
   add.textContent = '+ Enviar una foto para vos';
-  add.addEventListener('click', () => openTextModal('Foto para vos', '', 'paravos'));
+  add.addEventListener('click', openPvModal);
   wrap.appendChild(add);
-  if (!items.length) { wrap.innerHTML += '<p class="pv-empty">Todavía no hay fotos acá. 💌</p>'; return; }
+  if (!items.length) { wrap.insertAdjacentHTML('beforeend', '<p class="pv-empty">Todavía no hay fotos acá. 💌</p>'); return; }
   items.forEach((f) => {
-    const url = state.signedUrls[f.url] || '';
-    const isVideo = f.url.toLowerCase().endsWith('.mp4');
     const div = document.createElement('div');
     div.className = 'pv-item';
-    div.innerHTML = (isVideo ? `<video src="${url}" controls playsinline></video>` : `<img src="${url}" data-full="${url}" />`) +
-      `<div class="pv-meta"><button class="pv-del">🗑️</button><div class="pv-fecha">${fechaCorta(f.fecha)}</div>${f.mensaje ? `<div class="pv-msg">"${escapeHtml(f.mensaje)}"</div>` : ''}</div>`;
+    let body = '';
+    if (f.url) {
+      const url = state.signedUrls[f.url] || '';
+      const isVideo = (f.url || '').toLowerCase().endsWith('.mp4');
+      body = isVideo ? `<video src="${url}" controls playsinline></video>` : `<img src="${url}" data-full="${url}" />`;
+    }
+    div.innerHTML = body + `<div class="pv-meta"><button class="pv-del">🗑️</button><div class="pv-fecha">${fechaCorta(f.fecha)} · de ${whoLabel(f.remitente)}</div>${f.mensaje ? `<div class="pv-msg">"${escapeHtml(f.mensaje)}"</div>` : ''}</div>`;
     div.querySelector('.pv-del').addEventListener('click', () => deleteParaVos(f.id));
     div.querySelector('img')?.addEventListener('click', (e) => openLightbox(e.target.dataset.full));
     wrap.appendChild(div);
   });
 }
+function openPvModal() {
+  const para = state.who === 'el' ? 'ella' : 'el';
+  $('#pv-label').textContent = `Mandale una foto a ${whoLabel(para)}`;
+  $('#pv-input').value = '';
+  $('#pv-text').value = '';
+  $('#pv-modal').classList.remove('hidden');
+}
+$('#pv-cancel').addEventListener('click', () => $('#pv-modal').classList.add('hidden'));
+$('#pv-save').addEventListener('click', async () => {
+  const file = $('#pv-input').files[0];
+  if (!file) { alert('Elegí una foto primero'); return; }
+  const ext = '.' + (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const safe = file.name.replace(/\.[^.]+$/, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '_').slice(0, 60);
+  const storagePath = `para_vos/${safe}_${Date.now()}${ext}`;
+  const msg = $('#pv-text').value.trim() || null;
+  $('#pv-save').disabled = true;
+  const { error: upErr } = await db.storage.from('fotos').upload(storagePath, file, { contentType: file.type || 'image/jpeg', upsert: false });
+  if (upErr) { alert('No se pudo subir: ' + upErr.message); $('#pv-save').disabled = false; return; }
+  const { error: inErr } = await db.from('fotos_para_vos').insert({ fecha: todayStr(), remitente: state.who, url: storagePath, mensaje: msg });
+  $('#pv-save').disabled = false;
+  $('#pv-modal').classList.add('hidden');
+  if (inErr) { alert('Se subió pero no se guardó: ' + inErr.message); return; }
+  const para = state.who === 'el' ? 'ella' : 'el';
+  sendPush(para, '💌 Foto para vos', whoLabel(state.who) + ' te mandó una foto.');
+  loadData();
+});
 $$('.pv-tab').forEach((t) => t.addEventListener('click', () => { state.pvTab = t.dataset.pv; $$('.pv-tab').forEach((x) => x.classList.toggle('active', x === t)); renderParaVos(); }));
 async function deleteParaVos(id) {
   if (!confirm('¿Borrar?')) return;
   const f = state.paraVos.find((x) => x.id === id);
-  if (f) await db.storage.from('fotos').remove([f.url]);
+  if (f && f.url) await db.storage.from('fotos').remove([f.url]);
   await db.from('fotos_para_vos').delete().eq('id', id);
   loadData();
 }
@@ -655,10 +742,46 @@ function renderCartas() {
 }
 function renderLugares() {
   const wrap = $('#lugares');
-  wrap.innerHTML = '<button class="add-btn" data-a="lugares">+ Agregar un lugar</button>';
-  renderEntriesInto(wrap, state.lugares.slice().reverse(), { table: 'lugares' });
-  bindListAdd(wrap);
+  wrap.innerHTML = '<button class="add-btn" id="add-lugar">+ Agregar un lugar</button>';
+  const items = state.lugares.slice().reverse();
+  if (!items.length) { wrap.innerHTML += '<p class="pv-empty">Todavía no hay lugares guardados. 📍</p>'; }
+  items.forEach((l) => {
+    const div = document.createElement('div');
+    div.className = 'entry';
+    let maps = '';
+    if (l.ubicacion) {
+      const q = encodeURIComponent(l.ubicacion);
+      maps = `<a class="maps-link" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">📍 Ver en Google Maps</a>`;
+    }
+    div.innerHTML = `<div class="entry-body">
+        <div class="lugar-nombre">${escapeHtml(l.nombre || '')}</div>
+        <div class="entry-texto">${escapeHtml(l.descripcion || '')}</div>
+        ${maps}
+      </div>
+      <button class="entry-del">🗑️</button>`;
+    div.querySelector('.entry-del').addEventListener('click', async () => {
+      if (confirm('¿Borrar este lugar?')) { await db.from('lugares').delete().eq('id', l.id); loadData(); }
+    });
+    wrap.appendChild(div);
+  });
+  $('#add-lugar').addEventListener('click', () => {
+    $('#lugar-nombre').value = '';
+    $('#lugar-desc').value = '';
+    $('#lugar-ubicacion').value = '';
+    $('#lugar-modal').classList.remove('hidden');
+  });
 }
+$('#lugar-cancel').addEventListener('click', () => $('#lugar-modal').classList.add('hidden'));
+$('#lugar-save').addEventListener('click', async () => {
+  const nombre = $('#lugar-nombre').value.trim();
+  const desc = $('#lugar-desc').value.trim();
+  const ubic = $('#lugar-ubicacion').value.trim();
+  if (!nombre && !desc) { alert('Poné al menos un nombre o una descripción'); return; }
+  const { error } = await db.from('lugares').insert({ nombre: nombre || null, descripcion: desc || null, ubicacion: ubic || null });
+  if (error) { alert('No se pudo: ' + error.message); return; }
+  $('#lugar-modal').classList.add('hidden');
+  loadData();
+});
 function renderCapsula() {
   const wrap = $('#capsula');
   wrap.innerHTML = '<button class="add-btn" data-a="capsula">+ Guardar un mensaje</button>';
@@ -717,18 +840,37 @@ function renderArte() {
 function renderTeQuiero() {
   const wrap = $('#tequiero');
   const count = state.teQuiero.length;
+  const hoy = state.teQuiero.filter((t) => ((t.creado_en || '').slice(0, 10)) === todayStr()).length;
   wrap.innerHTML = `<div class="tq-wrap">
     <div class="tq-count">${count}</div>
     <p class="section-sub" style="margin:4px 0 16px">"te quiero" enviados</p>
     <button class="tq-btn" id="tq-btn">Te<br/>quiero</button>
+    <div class="tq-today">${hoy ? `Hoy ya se mandaron ${hoy} ❤️` : 'Mandale un "te quiero" hoy ❤️'}</div>
   </div>`;
-  $('#tq-btn').addEventListener('click', async () => {
+  $('#tq-btn').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    if (btn.disabled) return;
+    btn.disabled = true;
     const { error } = await db.from('te_quiero').insert({ autor: state.who });
-    if (error) { alert(error.message); return; }
+    if (error) { alert(error.message); btn.disabled = false; return; }
     const para = state.who === 'el' ? 'ella' : 'el';
-    sendPush(para, '❤️', 'Alguien te mando un "te quiero".');
+    sendPush(para, '❤️', 'Alguien te mandó un "te quiero".');
+    launchHearts(e);
+    btn.disabled = false;
     loadData();
   });
+}
+function launchHearts(e) {
+  const emojis = ['❤️', '💖', '💘', '💕', '💗'];
+  for (let i = 0; i < 12; i++) {
+    const s = document.createElement('span');
+    s.className = 'tq-burst';
+    s.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    s.style.left = ((e && e.clientX ? e.clientX : innerWidth / 2) + (Math.random() * 70 - 35)) + 'px';
+    s.style.top = ((e && e.clientY ? e.clientY : innerHeight / 2) - 20) + 'px';
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 1000);
+  }
 }
 
 // ---------- Mood ----------
@@ -760,7 +902,29 @@ function renderCreador() {
     <div class="creador-stat"><span>"Te quiero"</span><b>${state.teQuiero.length}</b></div>
     <div class="creador-stat"><span>Razones</span><b>${state.razones.length}</b></div>
     <div class="creador-stat"><span>Días juntos</span><b>${Math.floor((Date.now() - CONFIG.INICIO.getTime()) / 86400000)}</b></div>
-  </div>`;
+    <button class="btn-big ghost" id="preview-cofre" style="margin-top:14px;width:100%">👁️ Ver cofre de prueba</button>
+  </div>
+  <div class="creador-card"><h3>Calendario de adviento</h3><p class="section-sub" style="text-align:left;font-size:13px;margin-bottom:6px">Cargá la sorpresa de cada puerta. El último día es el cofre.</p><div id="adv-admin"></div></div>`;
+  $('#preview-cofre').addEventListener('click', () => { go('cofre'); startReveal(); });
+  renderAdventAdmin();
+}
+function renderAdventAdmin() {
+  const wrap = $('#adv-admin');
+  if (!wrap) return;
+  const days = getAdventDays();
+  wrap.innerHTML = '';
+  days.forEach((d, i) => {
+    const ds = dateStr(d);
+    const entry = state.adviento.find((a) => a.fecha === ds);
+    const resumen = entry
+      ? (entry.tipo === 'foto' ? '📷 ' + (entry.titulo || 'Foto') : entry.tipo === 'cancion' ? '🎵 Canción' : '💬 ' + ((entry.texto || '').slice(0, 26)))
+      : '— vacío —';
+    const row = document.createElement('div');
+    row.className = 'adv-row';
+    row.innerHTML = `<span class="adv-dia">Día ${i + 1}</span><span class="adv-resumen">${escapeHtml(resumen)} · ${fechaCorta(ds)}</span><button class="mini-btn" data-adv="${ds}">✏️</button>`;
+    row.querySelector('[data-adv]').addEventListener('click', () => openAdventModal(ds, entry));
+    wrap.appendChild(row);
+  });
 }
 
 // ---------- Modal de texto genérico ----------
@@ -821,23 +985,139 @@ $('#lightbox').addEventListener('click', (e) => {
   if (e.target.id === 'lightbox' || e.target.classList.contains('lightbox-close')) $('#lightbox').classList.add('hidden');
 });
 
-// ---------- Cofre ----------
-const ES_CUMPLE = () => Date.now() >= CONFIG.CUMPLE.getTime();
-function renderCofre() {
-  const wrap = $('#cofre');
-  if (!ES_CUMPLE()) {
-    wrap.innerHTML = `<div class="cofre-wrap"><div class="cofre-box">🔒🎁</div>
-      <p class="cofre-locked-hint">Este cofre se abre el ${CONFIG.CUMPLE_TEXTO}.</p>
-      <p class="cofre-locked-hint">Paciencia, mi amor… vale la pena. 😉</p>
-      <div class="cofre-countdown"><div class="cd-box"><span id="cofre-dias">--</span><label>días</label></div><div class="cd-box"><span id="cofre-horas">--</span><label>horas</label></div></div></div>`;
-    const target = CONFIG.CUMPLE.getTime();
-    const tick = () => { let d = target - Date.now(); if (d < 0) d = 0; $('#cofre-dias').textContent = Math.floor(d / 86400000); $('#cofre-horas').textContent = Math.floor((d % 86400000) / 3600000); };
-    tick(); setInterval(tick, 60000);
-  } else {
-    wrap.innerHTML = `<div class="cofre-wrap"><div class="cofre-box" id="cofre-open">🎁</div><p class="cofre-locked-hint">Tocá el cofre, mi amor.</p></div>`;
-    $('#cofre-open').addEventListener('click', startReveal);
-  }
+// ---------- Calendario de adviento ----------
+function previewCumple() {
+  return new URLSearchParams(location.search).get('preview') === '1';
 }
+function getAdventDays() {
+  const days = [];
+  const d = new Date(CONFIG.ADVIENTO_INICIO);
+  const end = new Date(CONFIG.CUMPLE);
+  while (d <= end) { days.push(new Date(d)); d.setDate(d.getDate() + 1); }
+  return days;
+}
+function renderCalendario() {
+  const wrap = $('#calendario');
+  if (!wrap) return;
+  const days = getAdventDays();
+  const hoy = todayStr();
+  const esPreview = previewCumple();
+  const cumpleStr = dateStr(CONFIG.CUMPLE);
+  let html = '<div class="cal-grid">';
+  days.forEach((d, i) => {
+    const ds = dateStr(d);
+    const n = i + 1;
+    const esHoy = ds === hoy;
+    const abierta = esPreview || ds < hoy || esHoy;
+    const esFinal = ds === cumpleStr;
+    const entry = state.adviento.find((a) => a.fecha === ds);
+    if (esFinal) {
+      html += `<button class="cal-door cal-final ${abierta ? 'open' : 'locked'}" data-day="${ds}">
+        <span class="cal-num">${n}</span><span class="cal-ico">${abierta ? '🎁' : '🔒'}</span>
+        <span class="cal-txt">${abierta ? 'Tu regalo' : 'Se abre el ' + CONFIG.CUMPLE_TEXTO}</span></button>`;
+    } else if (!abierta) {
+      html += `<div class="cal-door locked"><span class="cal-num">${n}</span><span class="cal-ico">🔒</span><span class="cal-txt">${fechaCorta(ds)}</span></div>`;
+    } else {
+      const ico = entry ? (entry.tipo === 'foto' ? '📷' : entry.tipo === 'cancion' ? '🎵' : '💌') : '✨';
+      html += `<button class="cal-door open ${esHoy && !esPreview ? 'today' : ''}" data-day="${ds}">
+        <span class="cal-num">${n}</span><span class="cal-ico">${ico}</span>
+        <span class="cal-txt">${esPreview ? fechaCorta(ds) : (esHoy ? '¡Hoy!' : fechaCorta(ds))}</span></button>`;
+    }
+  });
+  html += '</div>';
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('.cal-door[data-day]').forEach((b) => b.addEventListener('click', () => openDoor(b.dataset.day)));
+}
+function openDoor(fecha) {
+  if (fecha === dateStr(CONFIG.CUMPLE)) { startReveal(); return; }
+  const entry = state.adviento.find((a) => a.fecha === fecha);
+  const c = $('#door-content');
+  c.innerHTML = `<div class="door-fecha">${fechaCorta(fecha)}</div>`;
+  if (!entry) {
+    c.innerHTML += `<div class="door-empty">Todavía no hay nada acá para este día… 😉</div>`;
+  } else if (entry.tipo === 'foto') {
+    c.innerHTML += `${entry.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : ''}<img src="${state.signedUrls[entry.url] || ''}" alt="sorpresa" />`;
+  } else if (entry.tipo === 'cancion') {
+    c.innerHTML += `${entry.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : ''}<iframe src="https://open.spotify.com/embed/track/${entry.url}" width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`;
+  } else {
+    c.innerHTML += `${entry.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : ''}<div class="door-texto">${escapeHtml(entry.texto || '')}</div>`;
+  }
+  $('#door-modal').classList.remove('hidden');
+}
+$('#door-close').addEventListener('click', () => $('#door-modal').classList.add('hidden'));
+$('#door-modal').addEventListener('click', (e) => { if (e.target.id === 'door-modal') $('#door-modal').classList.add('hidden'); });
+
+// Editor de puertas (creador)
+function openAdventModal(fecha, entry) {
+  state.advFecha = fecha;
+  $('#adviento-titulo').textContent = `Puerta del ${fechaCorta(fecha)}`;
+  $('#adv-titulo').value = entry?.titulo || '';
+  $('#adv-texto').value = entry?.tipo === 'texto' ? (entry.texto || '') : '';
+  $('#adv-foto').value = '';
+  $('#adv-cancion').value = entry?.tipo === 'cancion' ? (entry.url || '') : '';
+  setAdvTipo(entry?.tipo || 'texto');
+  $('#adviento-modal').classList.remove('hidden');
+}
+function setAdvTipo(tipo) {
+  state.advTipo = tipo;
+  $$('#adv-tipo button').forEach((b) => b.classList.toggle('active', b.dataset.tipo === tipo));
+  $('#adv-texto').classList.toggle('hidden', tipo !== 'texto');
+  $('#adv-foto').classList.toggle('hidden', tipo !== 'foto');
+  $('#adv-cancion').classList.toggle('hidden', tipo !== 'cancion');
+}
+$$('#adv-tipo button').forEach((b) => b.addEventListener('click', () => setAdvTipo(b.dataset.tipo)));
+$('#adviento-cancel').addEventListener('click', () => $('#adviento-modal').classList.add('hidden'));
+$('#adviento-save').addEventListener('click', async () => {
+  const fecha = state.advFecha;
+  const tipo = state.advTipo;
+  const titulo = $('#adv-titulo').value.trim() || null;
+  let texto = null, url = null;
+  const existing = state.adviento.find((a) => a.fecha === fecha);
+  if (tipo === 'texto') {
+    texto = $('#adv-texto').value.trim();
+    if (!texto) { alert('Escribí la sorpresa'); return; }
+  } else if (tipo === 'foto') {
+    const file = $('#adv-foto').files[0];
+    if (file) {
+      const ext = '.' + (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const safe = file.name.replace(/\.[^.]+$/, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '_').slice(0, 60);
+      url = `adviento/${fecha}_${Date.now()}${ext}`;
+      const { error: upErr } = await db.storage.from('fotos').upload(url, file, { contentType: file.type || 'image/jpeg', upsert: false });
+      if (upErr) { alert('No se pudo subir: ' + upErr.message); return; }
+    } else if (existing && existing.url) {
+      url = existing.url;
+    } else {
+      alert('Elegí una foto');
+      return;
+    }
+  } else if (tipo === 'cancion') {
+    const id = extractSpotifyId($('#adv-cancion').value);
+    if (!id) { alert('Pegá un link de Spotify válido'); return; }
+    url = id;
+  }
+  const payload = { fecha, tipo, titulo, texto, url };
+  const { error } = existing
+    ? await db.from('adviento').update(payload).eq('id', existing.id)
+    : await db.from('adviento').insert(payload);
+  if (error) { alert('No se pudo: ' + error.message); return; }
+  $('#adviento-modal').classList.add('hidden');
+  loadData();
+});
+
+// Agregar canción
+$('#cancion-cancel').addEventListener('click', () => $('#cancion-modal').classList.add('hidden'));
+$('#cancion-save').addEventListener('click', async () => {
+  const link = $('#cancion-link').value.trim();
+  const msg = $('#cancion-msg').value.trim() || null;
+  const id = extractSpotifyId(link);
+  if (!id) { alert('Pegá un link de Spotify válido (open.spotify.com/track/…)'); return; }
+  const { error } = await db.from('canciones').insert({ spotify_id: id, de: state.who, mensaje: msg });
+  if (error) { alert('No se pudo: ' + error.message); return; }
+  $('#cancion-modal').classList.add('hidden');
+  const para = state.who === 'el' ? 'ella' : 'el';
+  sendPush(para, '🎵 Nueva canción', whoLabel(state.who) + ' te dedicó una canción. ¡Escuchala!');
+  loadData();
+});
 function startReveal() { $('#view-cofre').innerHTML = '<div class="slideshow" id="slideshow"></div>'; playSlideshow(); }
 function playSlideshow() {
   const ss = $('#slideshow');

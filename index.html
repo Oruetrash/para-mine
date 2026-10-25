@@ -49,7 +49,7 @@
       <button class="nav-btn" data-view="historia"><span class="nav-ico">📖</span><span class="nav-txt">Historia</span></button>
       <button class="nav-btn" data-view="hoy"><span class="nav-ico">📸</span><span class="nav-txt">Hoy</span></button>
       <button class="nav-btn" data-view="album"><span class="nav-ico">🖼️</span><span class="nav-txt">Álbum</span></button>
-      <button class="nav-btn" data-view="cofre"><span class="nav-ico">🎁</span><span class="nav-txt">Cofre</span></button>
+      <button class="nav-btn" data-view="cofre"><span class="nav-ico">🎁</span><span class="nav-txt">Calendario</span></button>
       <button class="nav-btn" id="nav-mas"><span class="nav-ico">✨</span><span class="nav-txt">Más</span></button>
     </nav>
 
@@ -120,11 +120,11 @@
       <div id="album"></div>
     </section>
 
-    <!-- COFRE -->
+    <!-- CALENDARIO -->
     <section id="view-cofre" class="view">
-      <h2 class="section-title script">Para Miñe</h2>
-      <p class="section-sub">Un cofre guardado con todo mi amor.</p>
-      <div id="cofre"></div>
+      <h2 class="section-title script">Calendario</h2>
+      <p class="section-sub">Un poquito de nosotros cada día, hasta tu cumple.</p>
+      <div id="calendario"></div>
     </section>
 
     <!-- CANCIONES -->
@@ -249,6 +249,75 @@
         <button class="btn-ghost" id="upload-cancel">Cancelar</button>
         <button class="btn-solid" id="upload-do">Subir</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal "Para vos" (foto + mensaje) -->
+  <div id="pv-modal" class="modal hidden">
+    <div class="modal-card">
+      <h3>Foto para vos</h3>
+      <p class="upload-label" id="pv-label"></p>
+      <input type="file" id="pv-input" accept="image/*" />
+      <textarea id="pv-text" rows="2" placeholder="Un mensajito (opcional)"></textarea>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="pv-cancel">Cancelar</button>
+        <button class="btn-solid" id="pv-save">Enviar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal lugar -->
+  <div id="lugar-modal" class="modal hidden">
+    <div class="modal-card">
+      <h3>Nuevo lugar</h3>
+      <input type="text" id="lugar-nombre" placeholder="Nombre del lugar" />
+      <textarea id="lugar-desc" rows="2" placeholder="Por qué es especial"></textarea>
+      <input type="text" id="lugar-ubicacion" placeholder="Dirección o punto en el mapa" />
+      <div class="modal-actions">
+        <button class="btn-ghost" id="lugar-cancel">Cancelar</button>
+        <button class="btn-solid" id="lugar-save">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal canción -->
+  <div id="cancion-modal" class="modal hidden">
+    <div class="modal-card">
+      <h3>Agregar una canción</h3>
+      <input type="text" id="cancion-link" placeholder="Link de Spotify (o el código)" />
+      <textarea id="cancion-msg" rows="2" placeholder="Un mensaje para quien la escuche (opcional)"></textarea>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="cancion-cancel">Cancelar</button>
+        <button class="btn-solid" id="cancion-save">Enviar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal puerta del calendario (creador) -->
+  <div id="adviento-modal" class="modal hidden">
+    <div class="modal-card">
+      <h3 id="adviento-titulo">Puerta del calendario</h3>
+      <div class="adv-tipo" id="adv-tipo">
+        <button type="button" data-tipo="texto" class="active">💬 Texto</button>
+        <button type="button" data-tipo="foto">📷 Foto</button>
+        <button type="button" data-tipo="cancion">🎵 Canción</button>
+      </div>
+      <textarea id="adv-texto" rows="3" placeholder="Escribí la sorpresa…"></textarea>
+      <input type="file" id="adv-foto" accept="image/*" class="hidden" />
+      <input type="text" id="adv-cancion" placeholder="Link o código de Spotify" class="hidden" />
+      <input type="text" id="adv-titulo" placeholder="Título (opcional)" />
+      <div class="modal-actions">
+        <button class="btn-ghost" id="adviento-cancel">Cancelar</button>
+        <button class="btn-solid" id="adviento-save">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal abrir puerta -->
+  <div id="door-modal" class="modal hidden">
+    <div class="modal-card door-card">
+      <button class="mas-close" id="door-close">✕</button>
+      <div id="door-content"></div>
     </div>
   </div>
 

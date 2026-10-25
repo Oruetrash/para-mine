@@ -14,6 +14,9 @@ const CONFIG = {
   CUMPLE: new Date('2026-11-21T00:00:00'),
   CUMPLE_TEXTO: '21 de noviembre',
 
+  // Calendario de adviento: una puerta por día desde esta fecha hasta el cumple
+  ADVIENTO_INICIO: new Date('2026-11-01T00:00:00'),
+
   // Desde cuándo contamos "días juntos"
   INICIO: new Date('2023-04-28T00:00:00'),
 

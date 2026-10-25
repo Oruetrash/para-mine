@@ -77,6 +77,28 @@ create table if not exists public.lugares (
   id uuid primary key default gen_random_uuid(),
   nombre text,
   descripcion text,
+  ubicacion text,
+  creado_en timestamptz default now()
+);
+
+-- Calendario de adviento (una puerta por día hasta el cumple)
+create table if not exists public.adviento (
+  id uuid primary key default gen_random_uuid(),
+  fecha date not null unique,
+  titulo text,
+  tipo text not null default 'texto',   -- 'texto' | 'foto' | 'cancion'
+  texto text,
+  url text,                              -- path de storage (foto) o spotify_id (cancion)
+  creado_en timestamptz default now()
+);
+
+-- Canciones que se agregan entre los dos
+create table if not exists public.canciones (
+  id uuid primary key default gen_random_uuid(),
+  spotify_id text not null,
+  titulo text,
+  de text not null,                      -- 'el' | 'ella'
+  mensaje text,
   creado_en timestamptz default now()
 );
 
@@ -101,7 +123,7 @@ create table if not exists public.mood (
 do $$
 declare t text;
 begin
-  foreach t in array array['mensajes_diarios','razones','arte','te_quiero','diario','planes','capsula','cartas','lugares','reto','mood']
+  foreach t in array array['mensajes_diarios','razones','arte','te_quiero','diario','planes','capsula','cartas','lugares','reto','mood','adviento','canciones']
   loop
     execute format('alter table public.%I enable row level security', t);
     execute format('create policy %I_select on public.%I for select to authenticated using (true)', t, t);
