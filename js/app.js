@@ -73,7 +73,12 @@ function initOneSignal() {
     try {
       await OS.init({
         appId: CONFIG.ONESIGNAL_APP_ID,
+        // La app está configurada como "Typical Site" en el dashboard, por lo que
+        // sin esta bandera el SDK ignora path/serviceWorkerParam y usa la ruta "/"
+        // del dashboard (que en GitHub Pages da 404). Esto fuerza usar la ruta correcta.
+        serviceWorkerOverrideForTypical: true,
         path: swPath,
+        serviceWorkerPath: 'OneSignalSDKWorker.js',
         serviceWorkerParam: { scope: swPath },
       });
       await OS.login(state.who);
