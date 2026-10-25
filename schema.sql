@@ -1,9 +1,34 @@
 -- ============================================================
---  NUEVAS TABLAS (pegá en Supabase → SQL Editor → Run)
---  (las de fotos_dia / fotos_para_vos / destacada ya están)
+--  TABLAS + SEGURIDAD P0
+--  Pegá en Supabase → SQL Editor → Run.
+--
+--  Antes de correrlo:
+--   1) Creá DOS cuentas Auth (ej. el@… y ella@…) en Authentication → Users.
+--   2) Después de crear las cuentas, cargá el mapeo en `profiles`:
+--        insert into public.profiles (id, who)
+--        values ('<uid-de-el>', 'el'), ('<uid-de-ella>', 'ella');
+--      (el uid está en Authentication → Users → cada usuario).
+--   3) Verificá el huso horario en `hoy()` (America/Asuncion).
 -- ============================================================
 
--- Mensajes y quizzes diarios
+-- ---------- 1) Perfiles: mapea auth.uid() -> who ----------
+create table if not exists public.profiles (
+  id uuid primary key references auth.users on delete cascade,
+  who text not null check (who in ('el','ella'))
+);
+
+-- ---------- 2) Helpers ----------
+-- Quién es el usuario autenticado (no falsificable desde el cliente)
+create or replace function public.me() returns text
+language sql stable security definer set search_path = public
+as $$ select who from public.profiles where id = auth.uid() $$;
+
+-- Fecha actual del servidor en el huso de Asunción (ajustá si hace falta)
+create or replace function public.hoy() returns date
+language sql stable
+as $$ select (now() at time zone 'America/Asuncion')::date $$;
+
+-- ---------- Mensajes y quizzes diarios ----------
 create table if not exists public.mensajes_diarios (
   id uuid primary key default gen_random_uuid(),
   fecha date not null default current_date,
@@ -119,16 +144,133 @@ create table if not exists public.mood (
   creado_en timestamptz default now()
 );
 
--- ---------- Seguridad (RLS) ----------
+-- ---------- 3) La propuesta (el cofre) ----------
+-- La carta y la pregunta viven SOLO acá (servidor), no en config.js.
+create table if not exists public.propuesta (
+  id int primary key default 1,
+  fecha date not null,
+  pregunta text,
+  carta text,
+  final text,
+  respuesta text,
+  respondido_en timestamptz
+);
+
+insert into public.propuesta (id, fecha, pregunta, carta, final) values (
+  1,
+  '2026-11-21',
+  '¿Querés volver a ser mi novia?',
+  'Miñe… pasaron años desde aquella primavera en la que nos encontramos sin buscarnos. Tuvimos capítulos, pausas, vueltas… y sin embargo, acá estamos: de nuevo juntos, como siempre tenía que ser.
+
+Porque te elijo. Te elegí el primer día, te elijo hoy y te voy a elegir todos los días.
+
+Hoy, en tu cumple, te quiero pedir algo muy importante…',
+  'Oficialmente… nuestros ❤'
+) on conflict (id) do update set
+  fecha = excluded.fecha,
+  pregunta = excluded.pregunta,
+  carta = excluded.carta,
+  final = excluded.final;
+
+-- ---------- 4) Seguridad (RLS) ----------
+
+-- Tablas compartidas: ambos leen, la autoría se fija al insertar.
 do $$
 declare t text;
 begin
-  foreach t in array array['mensajes_diarios','razones','arte','te_quiero','diario','planes','capsula','cartas','lugares','reto','mood','adviento','canciones']
+  foreach t in array array['mensajes_diarios','razones','arte','te_quiero','diario','planes','capsula','cartas','lugares','reto','mood','canciones']
   loop
     execute format('alter table public.%I enable row level security', t);
+    execute format('drop policy if exists %I_select on public.%I', t, t);
+    execute format('drop policy if exists %I_insert on public.%I', t, t);
+    execute format('drop policy if exists %I_update on public.%I', t, t);
+    execute format('drop policy if exists %I_delete on public.%I', t, t);
     execute format('create policy %I_select on public.%I for select to authenticated using (true)', t, t);
-    execute format('create policy %I_insert on public.%I for insert to authenticated with check (true)', t, t);
     execute format('create policy %I_update on public.%I for update to authenticated using (true)', t, t);
     execute format('create policy %I_delete on public.%I for delete to authenticated using (true)', t, t);
   end loop;
+end $$;
+
+-- Autoría no falsificable: el `de`/`autor` debe coincidir con me().
+drop policy if exists mensajes_insert on public.mensajes_diarios;
+create policy mensajes_insert on public.mensajes_diarios for insert to authenticated with check (de = public.me());
+drop policy if exists razones_insert on public.razones;
+create policy razones_insert on public.razones for insert to authenticated with check (autor = public.me());
+drop policy if exists tequiero_insert on public.te_quiero;
+create policy tequiero_insert on public.te_quiero for insert to authenticated with check (autor = public.me());
+drop policy if exists diario_insert on public.diario;
+create policy diario_insert on public.diario for insert to authenticated with check (autor = public.me());
+drop policy if exists capsula_insert on public.capsula;
+create policy capsula_insert on public.capsula for insert to authenticated with check (autor = public.me());
+drop policy if exists cartas_insert on public.cartas;
+create policy cartas_insert on public.cartas for insert to authenticated with check (autor = public.me());
+drop policy if exists mood_insert on public.mood;
+create policy mood_insert on public.mood for insert to authenticated with check (autor = public.me());
+drop policy if exists canciones_insert on public.canciones;
+create policy canciones_insert on public.canciones for insert to authenticated with check (de = public.me());
+-- Sin columna de autoría: cualquiera autenticado puede insertar.
+drop policy if exists arte_insert on public.arte;
+create policy arte_insert on public.arte for insert to authenticated with check (true);
+drop policy if exists planes_insert on public.planes;
+create policy planes_insert on public.planes for insert to authenticated with check (true);
+drop policy if exists reto_insert on public.reto;
+create policy reto_insert on public.reto for insert to authenticated with check (true);
+drop policy if exists lugares_insert on public.lugares;
+create policy lugares_insert on public.lugares for insert to authenticated with check (true);
+
+-- Adviento: ella solo ve las puertas ya abiertas; solo él lo edita.
+alter table public.adviento enable row level security;
+drop policy if exists adviento_select on public.adviento;
+create policy adviento_select on public.adviento for select to authenticated
+  using (public.me() = 'el' or fecha <= public.hoy());
+drop policy if exists adviento_insert on public.adviento;
+create policy adviento_insert on public.adviento for insert to authenticated with check (public.me() = 'el');
+drop policy if exists adviento_update on public.adviento;
+create policy adviento_update on public.adviento for update to authenticated using (public.me() = 'el');
+drop policy if exists adviento_delete on public.adviento;
+create policy adviento_delete on public.adviento for delete to authenticated using (public.me() = 'el');
+
+-- Propuesta: él la ve siempre; ella solo el día del cumple y puede responder.
+alter table public.propuesta enable row level security;
+drop policy if exists p_sel on public.propuesta;
+create policy p_sel on public.propuesta for select to authenticated using (public.me()='el' or fecha <= public.hoy());
+drop policy if exists p_upd on public.propuesta;
+create policy p_upd on public.propuesta for update to authenticated using (public.me()='ella' and fecha <= public.hoy()) with check (true);
+
+-- ---------- 5) Storage: fotos de adviento/ con el mismo gating ----------
+-- La policy de SELECT es la que decide si se puede firmar la URL (createSignedUrl).
+alter table storage.objects enable row level security;
+
+-- Fotos generales del bucket 'fotos' (álbum, para_vos, arte, foto_dia): cualquier autenticado.
+drop policy if exists fotos_select on storage.objects;
+create policy fotos_select on storage.objects for select to authenticated
+  using (bucket_id = 'fotos' and (storage.foldername(name))[1] is distinct from 'adviento');
+
+-- adviento/: solo él, o ella si ya pasó la fecha de esa puerta.
+drop policy if exists adviento_storage_select on storage.objects;
+create policy adviento_storage_select on storage.objects for select to authenticated
+  using (
+    bucket_id = 'fotos'
+    and (storage.foldername(name))[1] = 'adviento'
+    and (public.me() = 'el'
+         or (regexp_match(name, 'adviento/([0-9]{4}-[0-9]{2}-[0-9]{2})'))[1]::date <= public.hoy())
+  );
+
+-- Subidas al bucket 'fotos'.
+drop policy if exists fotos_insert on storage.objects;
+create policy fotos_insert on storage.objects for insert to authenticated
+  with check (bucket_id = 'fotos');
+
+-- ---------- 6) Realtime ----------
+-- Activa actualizaciones en vivo (contador de "te quiero" y mensajes).
+do $$
+begin
+  alter publication supabase_realtime add table public.te_quiero;
+exception when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter publication supabase_realtime add table public.mensajes_diarios;
+exception when duplicate_object then null;
 end $$;

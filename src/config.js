@@ -1,8 +1,10 @@
 // ============================================================
 //  CONFIGURACIÓN DE LA APP  (acá podés editar textos y fechas)
+//  La propuesta NO vive acá: se sirve desde la tabla `propuesta`
+//  (ver schema.sql) y solo llega al cliente cuando corresponde.
 // ============================================================
 
-const CONFIG = {
+export const CONFIG = {
   SUPABASE_URL: 'https://sswyltqxarvkvpcpbqrf.supabase.co',
   SUPABASE_KEY: 'sb_publishable_6pqP08gApFgrWTmW-s8h0Q_JCdrEU0C',
   LOGIN_EMAIL: 'mili@nosotros.com',
@@ -112,13 +114,6 @@ const CONFIG = {
     'Te elijo, hoy y siempre.',
   ],
 
-  // La propuesta (el cofre)
-  PROPUESTA: {
-    pregunta: '¿Querés volver a ser mi novia?',
-    carta: 'Miñe… pasaron años desde aquella primavera en la que nos encontramos sin buscarnos. Tuvimos capítulos, pausas, vueltas… y sin embargo, acá estamos: de nuevo juntos, como siempre tenía que ser.\n\nPorque te elijo. Te elegí el primer día, te elijo hoy y te voy a elegir todos los días.\n\nHoy, en tu cumple, te quiero pedir algo muy importante…',
-    si: 'SÍ ❤️',
-    no: 'No',
-    final: 'Oficialmente… nuestros ❤',
-    cancionCelebracion: '3JE8qYm4luylvVnhVuUfvC',
-  },
+  // Canción de celebración (al responder la propuesta)
+  CANCION_CELEBRACION: '3JE8qYm4luylvVnhVuUfvC',
 };

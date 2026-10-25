@@ -4,7 +4,10 @@
   "private": true,
   "description": "App romántica para Miñe",
   "scripts": {
-    "serve": "npx serve .",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "npx serve dist",
     "convert": "node scripts/convert.js",
     "upload": "node scripts/upload.js"
   },
@@ -13,5 +16,8 @@
     "heic-convert": "^2.1.0",
     "puppeteer-core": "^24.43.1",
     "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10"
   }
 }

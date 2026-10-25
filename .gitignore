@@ -1,4 +1,5 @@
 node_modules/
+dist/
 fotosconmiñe/
 fotosconmi*e/
 scripts/mapping.json
