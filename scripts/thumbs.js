@@ -4,6 +4,7 @@
 // Requiere: npm install (sharp ya está en devDependencies).
 const { createClient } = require('@supabase/supabase-js');
 const sharp = require('sharp');
+const WebSocket = require('ws');
 
 const URL = process.env.SUPABASE_URL || 'https://sswyltqxarvkvpcpbqrf.supabase.co';
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -11,7 +12,7 @@ if (!SERVICE_KEY) {
   console.error('Falta SUPABASE_SERVICE_ROLE_KEY (Settings → API → service_role).');
   process.exit(1);
 }
-const supabase = createClient(URL, SERVICE_KEY, { auth: { persistSession: false } });
+const supabase = createClient(URL, SERVICE_KEY, { auth: { persistSession: false }, realtime: { transport: WebSocket } });
 
 async function main() {
   const { data: fotos, error } = await supabase.from('fotos').select('id, url, thumb');
