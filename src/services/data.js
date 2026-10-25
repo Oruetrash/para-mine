@@ -121,6 +121,15 @@ const loaders = {
     set('adviento', adviento); setStatus('adviento', 'ready');
     set('stats', { fotos: stats[0], fotosDia: stats[1], paraVos: stats[2], mensajes: stats[3], teQuiero: stats[4], razones: stats[5] });
   },
+  historial: async () => {
+    const [mensajes, paraVos] = await Promise.all([
+      mensajesRepo.list((q) => q.order('fecha', { ascending: false }).order('creado_en', { ascending: false }).limit(300)),
+      paraVosRepo.list((q) => q.order('fecha', { ascending: false }).limit(300)),
+    ]);
+    set('historialMensajes', mensajes);
+    set('historialParaVos', paraVos);
+    await signInto(paraVos.map((p) => p.url));
+  },
 };
 
 const loaded = new Map();
@@ -310,6 +319,7 @@ export async function sendParaVos(file, msg) {
   if (inErr) throw inErr;
   await refetchTable('paraVos');
   await addSignedUrl(storagePath);
+  invalidate('historial');
   const para = get('who') === 'el' ? 'ella' : 'el';
   sendPush(para, '💌 Foto para vos', whoLabel(get('who')) + ' te mandó una foto.');
 }
@@ -402,6 +412,7 @@ export async function sendEnvio(texto, franja) {
   if (error) throw error;
   sendPush(para, tipo === 'quiz' ? 'Nuevo quiz de ' + whoLabel(who) : 'Un mensaje de ' + whoLabel(who), texto);
   await refetchTable('mensajes');
+  invalidate('historial');
 }
 
 export async function answerProposal() {

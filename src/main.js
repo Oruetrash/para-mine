@@ -23,6 +23,7 @@ import { initMusica } from './features/musica.js';
 import { initEntries } from './features/entries.js';
 import { initAdviento } from './features/adviento.js';
 import { initCreador } from './features/creador.js';
+import { initHistorial } from './features/historial.js';
 
 // Estado inicial
 set('who', localStorage.getItem('who') || 'el');
@@ -87,6 +88,7 @@ async function bootstrap() {
   initEntries();
   initAdviento();
   initCreador();
+  initHistorial();
   initLogin(showApp);
 
   if ('serviceWorker' in navigator) {

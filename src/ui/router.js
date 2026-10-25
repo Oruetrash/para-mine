@@ -45,6 +45,7 @@ export function renderMasMenu() {
     { view: 'lugares', icono: '📍', texto: 'Lugares' },
     { view: 'reto', icono: '🎯', texto: 'Reto' },
     { view: 'mood', icono: '🌤️', texto: 'Mood' },
+    { view: 'historial', icono: '🗂️', texto: 'Historial' },
   ];
   if (get('who') === 'el') items.push({ view: 'creador', icono: '🔐', texto: 'Creador' });
   items.push({

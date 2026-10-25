@@ -480,3 +480,14 @@ img.fade.in { opacity: 1; }
 .pv-inicio-card img, .pv-inicio-card video { width: 100%; border-radius: 12px; aspect-ratio: 3/4; object-fit: cover; background: #eadcc8; }
 .pv-inicio-label { font-weight: 600; color: var(--rojo); font-size: 14px; margin-bottom: 10px; }
 .pv-inicio-msg { margin-top: 10px; font-size: 14px; color: var(--marron-claro); font-style: italic; }
+
+/* ---------- Historial ---------- */
+.hist-group { margin-bottom: 18px; }
+.hist-fecha { font-weight: 600; color: var(--rojo); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin: 12px 0 8px; }
+.hist-foto { background: var(--crema-claro); border-radius: 16px; padding: 10px; margin-bottom: 12px; box-shadow: var(--sombra); }
+.hist-foto img, .hist-foto video { width: 100%; border-radius: 12px; aspect-ratio: 3/4; object-fit: cover; background: #eadcc8; }
+.hist-foto-meta { margin-top: 8px; font-size: 13.5px; color: var(--marron-claro); }
+.hist-msg { background: var(--crema-claro); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; box-shadow: var(--sombra); }
+.hist-msg-head { font-weight: 600; color: var(--rojo); font-size: 12.5px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.hist-msg-texto { font-size: 14.5px; color: #5c4435; }
+.hist-msg-resp { font-size: 13.5px; color: var(--marron-claro); margin-top: 4px; }
