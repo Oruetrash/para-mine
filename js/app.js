@@ -915,6 +915,14 @@ function renderAdventAdmin() {
   wrap.innerHTML = '';
   days.forEach((d, i) => {
     const ds = dateStr(d);
+    const esFinal = i === days.length - 1;
+    if (esFinal) {
+      const row = document.createElement('div');
+      row.className = 'adv-row';
+      row.innerHTML = `<span class="adv-dia">Día ${i + 1}</span><span class="adv-resumen">🎁 El cofre (se abre solo ese día)</span>`;
+      wrap.appendChild(row);
+      return;
+    }
     const entry = state.adviento.find((a) => a.fecha === ds);
     const resumen = entry
       ? (entry.tipo === 'foto' ? '📷 ' + (entry.titulo || 'Foto') : entry.tipo === 'cancion' ? '🎵 Canción' : '💬 ' + ((entry.texto || '').slice(0, 26)))
