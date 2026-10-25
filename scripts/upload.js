@@ -3,8 +3,12 @@ const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const WebSocket = require('ws');
 
-const URL = 'https://sswyltqxarvkvpcpbqrf.supabase.co';
-const KEY = 'sb_publishable_6pqP08gApFgrWTmW-s8h0Q_JCdrEU0C';
+const URL = process.env.SUPABASE_URL || 'https://sswyltqxarvkvpcpbqrf.supabase.co';
+const KEY = process.env.SUPABASE_ANON_KEY;
+if (!KEY) {
+  console.error('Falta SUPABASE_ANON_KEY (Settings → API → anon/publishable).');
+  process.exit(1);
+}
 const supabase = createClient(URL, KEY, { realtime: { transport: WebSocket } });
 
 const root = __dirname.replace(/scripts$/, '');

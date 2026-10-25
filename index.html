@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.onesignal.com; frame-src https://open.spotify.com; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co https://*.onesignal.com wss://*.supabase.co; style-src 'self' 'unsafe-inline'; font-src 'self'" />
   <title>Para Miñe</title>
   <meta name="theme-color" content="#3a241b" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -115,9 +116,12 @@
 
     <!-- CALENDARIO -->
     <section id="view-cofre" class="view">
-      <h2 class="section-title script">Calendario</h2>
-      <p class="section-sub">Un poquito de nosotros cada día, hasta tu cumple.</p>
-      <div id="calendario"></div>
+      <div id="cofre-calendario-wrap">
+        <h2 class="section-title script">Calendario</h2>
+        <p class="section-sub">Un poquito de nosotros cada día, hasta tu cumple.</p>
+        <div id="calendario"></div>
+      </div>
+      <div id="cofre-reveal" class="hidden"></div>
     </section>
 
     <!-- CANCIONES -->

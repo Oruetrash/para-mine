@@ -9,12 +9,12 @@ import { set, get } from './store/store.js';
 import { $ } from './lib/dom.js';
 import { saludo } from './lib/format.js';
 import { initParticles } from './ui/effects.js';
-import { initLayers, initHistory } from './ui/layers.js';
+import { initLayers, initHistory, openLightbox } from './ui/layers.js';
 import { initRouter, renderMasMenu, show } from './ui/router.js';
 import { initPush, initRealtime } from './services/push.js';
-import { checkSession, resolveServer, showLogin, initLogin } from './services/auth.js';
+import { checkSession, resolveServer, showLogin, initLogin, initAuthEvents } from './services/auth.js';
 import { ensure, refetchTable, refetchTeQuiero } from './services/data.js';
-import { clearSignedCache } from './services/storage.js';
+import { clearSignedCache, signUrl } from './services/storage.js';
 import { initInicio, bootInicio } from './features/inicio.js';
 import { initAlbum } from './features/album.js';
 import { initHoy } from './features/hoy.js';
@@ -56,10 +56,27 @@ async function bootstrap() {
   document.addEventListener('visibilitychange', () =>
     document.documentElement.classList.toggle('paused', document.hidden));
 
+  // Fade-in de imágenes (load no burbujea; se captura en fase de captura).
+  document.addEventListener('load', (e) => {
+    const el = e.target;
+    if (el && el.classList && el.classList.contains('fade')) el.classList.add('in');
+  }, true);
+
+  // Lightbox único: data-full con URL firmada (http) o path crudo (se firma al click).
+  document.addEventListener('click', (e) => {
+    const img = e.target.closest('img[data-full]');
+    if (!img) return;
+    const full = img.dataset.full;
+    if (!full) return;
+    if (full.startsWith('http')) openLightbox(full);
+    else signUrl(full).then((u) => { if (u) openLightbox(u); }).catch(() => {});
+  });
+
   initParticles();
   initLayers();
   initRouter();
   initHistory(show);
+  initAuthEvents();
   history.replaceState({ view: 'inicio' }, '');
   show('inicio');
   initInicio();

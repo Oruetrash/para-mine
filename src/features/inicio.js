@@ -2,7 +2,6 @@ import { $ } from '../lib/dom.js';
 import { get, on } from '../store/store.js';
 import { CONFIG } from '../config.js';
 import { MESES } from '../lib/format.js';
-import { openLightbox } from '../ui/layers.js';
 
 export function startCountdown() {
   const target = CONFIG.CUMPLE.getTime();
@@ -43,9 +42,8 @@ export function renderRecuerdo() {
   if (!f) { wrap.innerHTML = ''; return; }
   const urls = get('signedUrls') || {};
   wrap.innerHTML = `<div class="rec-label">Recuerdo del día</div>
-    <img src="${urls[f.url] || ''}" data-full="${urls[f.url] || ''}" class="fade" onload="this.classList.add('in')" />
+    <img src="${urls[f.url] || ''}" data-full="${urls[f.url] || ''}" class="fade" />
     <div class="rec-cap">${MESES[f.mes - 1]} ${f.anio}</div>`;
-  wrap.querySelector('img')?.addEventListener('click', (e) => openLightbox(e.target.dataset.full));
 }
 
 export function initInicio() {

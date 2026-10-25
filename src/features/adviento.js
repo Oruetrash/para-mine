@@ -61,9 +61,9 @@ async function openDoor(fecha) {
     c.innerHTML += `<div class="door-empty">Todavía no hay nada acá para este día… 😉</div>`;
   } else if (entry.tipo === 'foto') {
     const u = await signUrl(entry.url);
-    c.innerHTML += `${entry.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : ''}<img src="${u || ''}" alt="sorpresa" class="fade" onload="this.classList.add('in')" />`;
+    c.innerHTML += `${entry.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : ''}<img src="${u || ''}" alt="sorpresa" class="fade" />`;
   } else if (entry.tipo === 'cancion') {
-    c.innerHTML += `${entry.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : ''}<div class="sp-mount" data-spotify="${entry.url}" data-label="${escapeHtml(entry.titulo || 'Reproducir')}"></div>`;
+    c.innerHTML += `${entry.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : ''}<div class="sp-mount" data-spotify="${escapeHtml(entry.url)}" data-label="${escapeHtml(entry.titulo || 'Reproducir')}"></div>`;
   } else {
     c.innerHTML += `${entry.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : ''}<div class="door-texto">${escapeHtml(entry.texto || '')}</div>`;
   }

@@ -9,7 +9,14 @@ export const SLOTS = [
 ];
 
 export function escapeHtml(s) {
-  return (s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Inicio del día local como ISO (para filtrar "hoy" en servidor sin romperse con el huso).
+export function startOfLocalDayISO() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString();
 }
 
 export function whoLabel(w) { return w === 'el' ? 'Él' : 'Ella'; }

@@ -1,7 +1,7 @@
 import { db } from '../lib/supabase.js';
 import { CONFIG } from '../config.js';
 import { get, set, setStatus } from '../store/store.js';
-import { todayStr, dateStr, whoLabel, extractSpotifyId, sanitizeBase } from '../lib/format.js';
+import { todayStr, dateStr, whoLabel, extractSpotifyId, sanitizeBase, startOfLocalDayISO } from '../lib/format.js';
 import { REPOS, fotosRepo, notasRepo, fotosDiaRepo, paraVosRepo, mensajesRepo, arteRepo, advientoRepo, propuestaRepo } from './repo.js';
 import { signMany, signUrl, uploadFile, removeFiles } from './storage.js';
 import { sendPush } from './push.js';
@@ -45,7 +45,7 @@ async function loadTeQuiero() {
   setStatus('teQuiero', 'loading');
   const [{ count: total }, hoyRes] = await Promise.all([
     db.from('te_quiero').select('*', { count: 'exact', head: true }),
-    db.from('te_quiero').select('*', { count: 'exact', head: true }).gte('creado_en', todayStr()),
+    db.from('te_quiero').select('*', { count: 'exact', head: true }).gte('creado_en', startOfLocalDayISO()),
   ]);
   set('teQuieroCount', total || 0);
   set('teQuieroToday', hoyRes.count || 0);

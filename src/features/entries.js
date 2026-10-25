@@ -1,7 +1,7 @@
 import { $ } from '../lib/dom.js';
 import { get, on, getStatus } from '../store/store.js';
 import { fechaCorta, todayStr, whoLabel, escapeHtml } from '../lib/format.js';
-import { openLightbox, openUploadModal, openTextModal, openLugarModal } from '../ui/layers.js';
+import { openUploadModal, openTextModal, openLugarModal } from '../ui/layers.js';
 import { toggleHecho, deferredRemove, sendTeQuiero, saveMood } from '../services/data.js';
 import { skeleton } from '../ui/skeleton.js';
 import { delegate } from '../ui/delegate.js';
@@ -90,8 +90,7 @@ function renderArte() {
   items.slice().reverse().forEach((a) => {
     const div = document.createElement('div');
     div.className = 'arte-item';
-    div.innerHTML = `<img src="${urls[a.url] || ''}" data-full="${urls[a.url] || ''}" class="fade" onload="this.classList.add('in')" /><div class="arte-cap">${escapeHtml(a.titulo || '')}</div>`;
-    div.querySelector('img').addEventListener('click', (e) => openLightbox(e.target.dataset.full));
+    div.innerHTML = `<img src="${urls[a.url] || ''}" data-full="${urls[a.url] || ''}" class="fade" /><div class="arte-cap">${escapeHtml(a.titulo || '')}</div>`;
     grid.appendChild(div);
   });
 }
@@ -134,7 +133,7 @@ function renderMood() {
   let html = '<div class="mood-grid">';
   emojis.forEach((e) => { html += `<button class="mood-btn" data-mood="${e}">${e}</button>`; });
   html += '</div><div class="mood-today">';
-  if (hoy.length) html += `Hoy: ${hoy.map((h) => `${h.mood} (${whoLabel(h.autor)})`).join(' · ')}`;
+  if (hoy.length) html += `Hoy: ${hoy.map((h) => `${escapeHtml(h.mood)} (${whoLabel(h.autor)})`).join(' · ')}`;
   else html += 'Todavía nadie marcó cómo se siente hoy.';
   html += '</div>';
   wrap.innerHTML = html;

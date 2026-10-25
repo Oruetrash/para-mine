@@ -7,9 +7,17 @@ import { invalidateAll } from './data.js';
 
 export async function logout() {
   await db.auth.signOut();
-  clearSignedCache();
-  invalidateAll();
-  location.reload();
+}
+
+// Reaccionar a expiración/refresh fallido o cierre de sesión.
+export function initAuthEvents() {
+  db.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
+      clearSignedCache();
+      invalidateAll();
+      location.reload();
+    }
+  });
 }
 
 // Quién soy y qué fecha es, según el servidor (no el dispositivo).

@@ -1,10 +1,12 @@
 import { $, $$ } from '../lib/dom.js';
 import { get, on, set, getStatus } from '../store/store.js';
+import { CONFIG } from '../config.js';
 import { MESES, SLOTS, escapeHtml } from '../lib/format.js';
-import { openLightbox, openUploadModal, openTextModal } from '../ui/layers.js';
+import { openUploadModal, openTextModal } from '../ui/layers.js';
 import { toggleDestacada, deferredRemove } from '../services/data.js';
-import { signMany, signUrl } from '../services/storage.js';
+import { signMany } from '../services/storage.js';
 import { skeleton } from '../ui/skeleton.js';
+import { delegateMap } from '../ui/delegate.js';
 
 let albumIO = null;
 
@@ -12,7 +14,7 @@ function getMonths() {
   const now = new Date();
   const endY = now.getFullYear(), endM = now.getMonth() + 1;
   const months = [];
-  let y = 2023, m = 4;
+  let y = CONFIG.INICIO.getFullYear(), m = CONFIG.INICIO.getMonth() + 1;
   while (y < endY || (y === endY && m <= endM)) { months.push({ anio: y, mes: m }); m++; if (m > 12) { m = 1; y++; } }
   return months.reverse();
 }
@@ -21,7 +23,7 @@ function mediaTag(foto) {
   const isVideo = (foto.url || '').toLowerCase().endsWith('.mp4');
   if (isVideo) return `<video data-path="${foto.url}" preload="metadata" controls playsinline></video>`;
   const thumb = foto.thumb || foto.url;
-  return `<img data-path="${thumb}" data-full="${foto.url}" loading="lazy" decoding="async" alt="foto" class="fade" onload="this.classList.add('in')" />`;
+  return `<img data-path="${thumb}" data-full="${foto.url}" loading="lazy" decoding="async" alt="foto" class="fade" />`;
 }
 
 // Firma en lote las fotos de las cards visibles (rootMargin 600px).
@@ -79,10 +81,11 @@ function renderMejores(wrap) {
     wrap.appendChild(t);
     const g = document.createElement('div');
     g.className = 'mejores-grid';
-    porMes[k].forEach((f) => { g.innerHTML += `<div class="mejor-card">${mediaTag(f)}<div class="mejor-tag">⭐</div></div>`; });
+    let cardsHtml = '';
+    porMes[k].forEach((f) => { cardsHtml += `<div class="mejor-card">${mediaTag(f)}<div class="mejor-tag">⭐</div></div>`; });
+    g.innerHTML = cardsHtml;
     wrap.appendChild(g);
   });
-  bindAlbumEvents();
 }
 
 function renderAlbum() {
@@ -119,26 +122,7 @@ function renderAlbum() {
     card.innerHTML = html;
     wrap.appendChild(card);
   });
-  bindAlbumEvents();
   setupLazySigning();
-}
-
-function bindAlbumEvents() {
-  $$('#album [data-action]').forEach((btn) => btn.addEventListener('click', () => {
-    const a = btn.dataset.action;
-    if (a === 'add') openUploadModal({ tipo: 'album', anio: parseInt(btn.dataset.anio), mes: parseInt(btn.dataset.mes), slot: btn.dataset.tipo });
-    else if (a === 'note') openNote(btn.dataset.anio, btn.dataset.mes, btn.dataset.tipo);
-    else if (a === 'del') {
-      const f = (get('fotos') || []).find((x) => x.id === btn.dataset.id);
-      if (f) deferredRemove('fotos', 'fotos', f.id, { label: 'Foto borrada', paths: [f.url, f.thumb].filter(Boolean) });
-    }
-    else if (a === 'delnote') deferredRemove('notas', 'notas', btn.dataset.id, { label: 'Nota borrada' });
-    else if (a === 'star') toggleDestacada(btn.dataset.id).catch(() => {});
-  }));
-  $$('#album img[data-full]').forEach((img) => img.addEventListener('click', () => {
-    const full = img.dataset.full;
-    if (full) signUrl(full).then((u) => { if (u) openLightbox(u); }).catch(() => {});
-  }));
 }
 
 function openNote(anio, mes, tipo) {
@@ -151,6 +135,18 @@ export function initAlbum() {
     set('albumMode', t.dataset.mode);
     $$('.album-tab').forEach((x) => x.classList.toggle('active', x === t));
   }));
+
+  delegateMap($('#album'), {
+    add: (d) => openUploadModal({ tipo: 'album', anio: parseInt(d.anio), mes: parseInt(d.mes), slot: d.tipo }),
+    note: (d) => openNote(d.anio, d.mes, d.tipo),
+    del: (d) => {
+      const f = (get('fotos') || []).find((x) => x.id === d.id);
+      if (f) deferredRemove('fotos', 'fotos', f.id, { label: 'Foto borrada', paths: [f.url, f.thumb].filter(Boolean) });
+    },
+    delnote: (d) => deferredRemove('notas', 'notas', d.id, { label: 'Nota borrada' }),
+    star: (d) => toggleDestacada(d.id).catch(() => {}),
+  });
+
   on('fotos', renderAlbum);
   on('notas', renderAlbum);
   on('albumMode', renderAlbum);

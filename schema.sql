@@ -283,3 +283,9 @@ end $$;
 -- ---------- 7) Performance: thumbnail del álbum ----------
 -- Columna para el thumb de la grilla (el full se firma solo al abrir el lightbox).
 alter table public.fotos add column if not exists thumb text;
+
+-- ---------- 8) Sanitización: constraints ----------
+alter table public.canciones drop constraint if exists canciones_spotify_check;
+alter table public.canciones add constraint canciones_spotify_check check (spotify_id ~ '^[A-Za-z0-9]{22}$');
+alter table public.mood drop constraint if exists mood_check;
+alter table public.mood add constraint mood_check check (mood in ('😍','😊','😐','😔','🥺'));

@@ -2,6 +2,8 @@ node_modules/
 dist/
 fotosconmiñe/
 fotosconmi*e/
+supabase/.temp/
+scripts/live*.js
 scripts/mapping.json
 scripts/test.js
 scripts/test-upload.js

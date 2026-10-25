@@ -15,13 +15,14 @@ function renderEnvios() {
   const comp = document.createElement('div');
   comp.className = 'compose-card';
   const opts = get('envTipo') === 'quiz' ? pickN(CONFIG.BANK_QUIZ, 2) : pickN(CONFIG.BANK_MENSAJES, 2);
+  let optsHtml = '';
+  opts.forEach((o) => { optsHtml += `<button class="opt-btn" data-env="${escapeHtml(o)}">${escapeHtml(o)}</button>`; });
+  optsHtml += `<button class="opt-btn" data-env="propio" style="font-style:italic">✍️ Escribir el mío…</button>`;
   comp.innerHTML = `<h4>Mandale ${get('envTipo') === 'quiz' ? 'un quiz' : 'un mensaje'} a ${whoLabel(para)}</h4>
     <div class="pv-tabs" style="margin-bottom:10px">
       <button class="pv-tab ${get('envTipo') === 'mensaje' ? 'active' : ''}" data-et="mensaje">Mensaje</button>
       <button class="pv-tab ${get('envTipo') === 'quiz' ? 'active' : ''}" data-et="quiz">Quiz</button>
-    </div>`;
-  opts.forEach((o) => { comp.innerHTML += `<button class="opt-btn" data-env="${escapeHtml(o)}">${escapeHtml(o)}</button>`; });
-  comp.innerHTML += `<button class="opt-btn" data-env="propio" style="font-style:italic">✍️ Escribir el mío…</button>`;
+    </div>${optsHtml}`;
   wrap.appendChild(comp);
   comp.querySelectorAll('[data-et]').forEach((b) => b.addEventListener('click', () => {
     set('envTipo', b.dataset.et);
