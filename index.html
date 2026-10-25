@@ -224,7 +224,7 @@
   </div>
 
   <!-- Modal genérico (texto) -->
-  <dialog id="text-modal" class="modal">
+  <div id="text-modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <h3 id="text-modal-title">Título</h3>
       <textarea id="text-modal-text" rows="4"></textarea>
@@ -234,10 +234,10 @@
         <button class="btn-solid" id="text-save">Guardar</button>
       </div>
     </div>
-  </dialog>
+  </div>
 
   <!-- Modal subir foto -->
-  <dialog id="upload-modal" class="modal">
+  <div id="upload-modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <h3>Subir foto</h3>
       <p id="upload-slot-label" class="upload-label"></p>
@@ -247,10 +247,10 @@
         <button class="btn-solid" id="upload-do">Subir</button>
       </div>
     </div>
-  </dialog>
+  </div>
 
   <!-- Modal "Para vos" (foto + mensaje) -->
-  <dialog id="pv-modal" class="modal">
+  <div id="pv-modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <h3>Foto para vos</h3>
       <p class="upload-label" id="pv-label"></p>
@@ -261,10 +261,10 @@
         <button class="btn-solid" id="pv-save">Enviar</button>
       </div>
     </div>
-  </dialog>
+  </div>
 
   <!-- Modal lugar -->
-  <dialog id="lugar-modal" class="modal">
+  <div id="lugar-modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <h3>Nuevo lugar</h3>
       <input type="text" id="lugar-nombre" placeholder="Nombre del lugar" />
@@ -275,10 +275,10 @@
         <button class="btn-solid" id="lugar-save">Guardar</button>
       </div>
     </div>
-  </dialog>
+  </div>
 
   <!-- Modal canción -->
-  <dialog id="cancion-modal" class="modal">
+  <div id="cancion-modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <h3>Agregar una canción</h3>
       <input type="text" id="cancion-link" placeholder="Link de Spotify (o el código)" />
@@ -288,10 +288,10 @@
         <button class="btn-solid" id="cancion-save">Enviar</button>
       </div>
     </div>
-  </dialog>
+  </div>
 
   <!-- Modal puerta del calendario (creador) -->
-  <dialog id="adviento-modal" class="modal">
+  <div id="adviento-modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <h3 id="adviento-titulo">Puerta del calendario</h3>
       <div class="adv-tipo" id="adv-tipo">
@@ -308,15 +308,15 @@
         <button class="btn-solid" id="adviento-save">Guardar</button>
       </div>
     </div>
-  </dialog>
+  </div>
 
   <!-- Modal abrir puerta -->
-  <dialog id="door-modal" class="modal">
+  <div id="door-modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card door-card">
       <button class="mas-close" id="door-close">✕</button>
       <div id="door-content"></div>
     </div>
-  </dialog>
+  </div>
 
   <script type="module" src="/src/main.js"></script>
 </body>
