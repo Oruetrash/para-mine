@@ -467,3 +467,4 @@ img.fade.in { opacity: 1; }
 /* <dialog> modales: quitar estilos UA y usar el overlay propio de .modal */
 dialog.modal { border: 0; max-width: none; max-height: none; width: 100vw; height: 100dvh; }
 dialog.modal::backdrop { background: transparent; }
+dialog.modal:not([open]) { display: none; }
