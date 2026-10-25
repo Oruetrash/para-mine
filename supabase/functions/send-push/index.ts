@@ -1,6 +1,6 @@
 // Edge Function: envía una notificación push vía OneSignal
 // Secrets requeridos en Supabase:
-//   ONESIGNAL_APP_ID  = 15190aaf-b1ec-4414-b27b-e78857f6717f
+//   ONESIGNAL_APP_ID  = 5ff32a07-7980-4692-aa0f-c48f17853f8f  (debe ser el MISMO App ID que usa js/config.js)
 //   ONESIGNAL_REST_KEY = (tu REST API Key, secreta)
 
 Deno.serve(async (req) => {

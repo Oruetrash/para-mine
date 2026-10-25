@@ -66,10 +66,16 @@ function initParticles() {
 
 // ---------- OneSignal ----------
 function initOneSignal() {
+  const base = new URL('.', location.href).pathname;
+  const swPath = base + 'onesignal/';
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   window.OneSignalDeferred.push(async function (OS) {
     try {
-      await OS.init({ appId: CONFIG.ONESIGNAL_APP_ID });
+      await OS.init({
+        appId: CONFIG.ONESIGNAL_APP_ID,
+        path: swPath,
+        serviceWorkerParam: { scope: swPath },
+      });
       await OS.login(state.who);
       if (OS.Notifications && OS.Notifications.requestPermission) OS.Notifications.requestPermission();
     } catch (e) {}

@@ -1,0 +1,21 @@
+const puppeteer = require('puppeteer-core');
+(async () => {
+  const browser = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  const page = await browser.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.setViewport({ width: 420, height: 900 });
+  await page.goto('https://oruetrash.github.io/para-mine/', { waitUntil: 'networkidle2', timeout: 40000 });
+  await page.click('.who-btn[data-who="el"]');
+  await page.type('#password-input', '211623');
+  await page.click('#login-btn');
+  await page.waitForFunction(() => !document.querySelector('#app').classList.contains('hidden'), { timeout: 20000 });
+  console.log('Login OK');
+  console.log('Días juntos:', await page.$eval('#dias-juntos', (el) => el.textContent.includes('días')));
+  await page.click('.nav-btn[data-view="album"]');
+  await page.waitForFunction(() => document.querySelectorAll('#album .month-card').length > 0, { timeout: 30000 });
+  console.log('Álbum meses:', await page.$eval('#album', (el) => el.querySelectorAll('.month-card').length));
+  console.log('ERRORES:', errors.length ? errors : 'ninguno');
+  await browser.close();
+  process.exit(0);
+})().catch((e) => { console.error('FATAL', e.message); process.exit(1); });
