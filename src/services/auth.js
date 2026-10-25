@@ -33,7 +33,8 @@ export function initLogin(onSuccess) {
     if (!pass) return;
     $('#login-btn').disabled = true;
     $('#login-btn').textContent = 'Entrando…';
-    const { error } = await db.auth.signInWithPassword({ email: CONFIG.LOGIN_EMAIL, password: pass });
+    const email = CONFIG.LOGIN_EMAILS[get('who')] || CONFIG.LOGIN_EMAILS.el;
+    const { error } = await db.auth.signInWithPassword({ email, password: pass });
     if (error) {
       $('#login-error').textContent = 'Clave incorrecta 💔';
       $('#login-btn').disabled = false;

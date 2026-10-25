@@ -239,9 +239,13 @@ create policy p_upd on public.propuesta for update to authenticated using (publi
 
 -- ---------- 5) Storage: fotos de adviento/ con el mismo gating ----------
 -- La policy de SELECT es la que decide si se puede firmar la URL (createSignedUrl).
+-- NOTA: corré esta sección con un rol que posea storage.objects (p. ej. el editor de
+-- policies de Storage en el dashboard). El endpoint SQL de la Management API corre
+-- como `postgres` (no owner de storage.objects) y da "must be owner of table objects".
 alter table storage.objects enable row level security;
 
--- Fotos generales del bucket 'fotos' (álbum, para_vos, arte, foto_dia): cualquier autenticado.
+-- Reemplazá la policy SELECT genérica (bucket 'fotos') por dos: fotos normales y adviento gated.
+drop policy if exists fotos_bucket_select on storage.objects;
 drop policy if exists fotos_select on storage.objects;
 create policy fotos_select on storage.objects for select to authenticated
   using (bucket_id = 'fotos' and (storage.foldername(name))[1] is distinct from 'adviento');
@@ -256,7 +260,8 @@ create policy adviento_storage_select on storage.objects for select to authentic
          or (regexp_match(name, 'adviento/([0-9]{4}-[0-9]{2}-[0-9]{2})'))[1]::date <= public.hoy())
   );
 
--- Subidas al bucket 'fotos'.
+-- Subidas al bucket 'fotos' (la subida a adviento/ ya está limitada por la RLS de la tabla adviento).
+drop policy if exists fotos_bucket_insert on storage.objects;
 drop policy if exists fotos_insert on storage.objects;
 create policy fotos_insert on storage.objects for insert to authenticated
   with check (bucket_id = 'fotos');

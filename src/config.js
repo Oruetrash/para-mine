@@ -7,7 +7,12 @@
 export const CONFIG = {
   SUPABASE_URL: 'https://sswyltqxarvkvpcpbqrf.supabase.co',
   SUPABASE_KEY: 'sb_publishable_6pqP08gApFgrWTmW-s8h0Q_JCdrEU0C',
-  LOGIN_EMAIL: 'mili@nosotros.com',
+
+  // Cuentas Auth: una por persona (el toggle del login elige cuál usar).
+  LOGIN_EMAILS: {
+    el: 'oliver@nosotros.com',
+    ella: 'mili@nosotros.com',
+  },
 
   ONESIGNAL_APP_ID: '5ff32a07-7980-4692-aa0f-c48f17853f8f',
 
