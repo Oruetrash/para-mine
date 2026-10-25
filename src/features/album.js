@@ -1,5 +1,5 @@
 import { $, $$ } from '../lib/dom.js';
-import { get, on, set } from '../store/store.js';
+import { get, on, set, getStatus } from '../store/store.js';
 import { MESES, SLOTS, escapeHtml } from '../lib/format.js';
 import { openLightbox, openUploadModal, openTextModal } from '../ui/layers.js';
 import { toggleDestacada, deferredRemove } from '../services/data.js';
