@@ -1,7 +1,7 @@
 import { $ } from '../lib/dom.js';
 import { get, on } from '../store/store.js';
 import { CONFIG } from '../config.js';
-import { MESES } from '../lib/format.js';
+import { MESES, whoLabel, escapeHtml } from '../lib/format.js';
 
 export function startCountdown() {
   const target = CONFIG.CUMPLE.getTime();
@@ -46,9 +46,28 @@ export function renderRecuerdo() {
     <div class="rec-cap">${MESES[f.mes - 1]} ${f.anio}</div>`;
 }
 
+export function renderPvInicio() {
+  const wrap = $('#pv-inicio');
+  const who = get('who');
+  const para = who === 'el' ? 'ella' : 'el';
+  const suya = (get('paraVos') || []).find((f) => f.remitente === para);
+  if (!suya) { wrap.innerHTML = ''; return; }
+  const urls = get('signedUrls') || {};
+  const url = urls[suya.url] || '';
+  const isVideo = (suya.url || '').toLowerCase().endsWith('.mp4');
+  wrap.innerHTML = `<div class="pv-inicio-card">
+    <div class="pv-inicio-label">📸 ${whoLabel(para)} te mandó una foto hoy</div>
+    ${isVideo ? `<video src="${url}" controls playsinline preload="metadata"></video>` : `<img src="${url}" data-full="${url}" class="fade" />`}
+    ${suya.mensaje ? `<div class="pv-inicio-msg">"${escapeHtml(suya.mensaje)}"</div>` : ''}
+  </div>`;
+}
+
 export function initInicio() {
   on('recuerdo', renderRecuerdo);
   on('signedUrls', renderRecuerdo);
+  on('paraVos', renderPvInicio);
+  on('signedUrls', renderPvInicio);
+  on('who', renderPvInicio);
 }
 
 // Render estático del Inicio (se llama al entrar a la app).

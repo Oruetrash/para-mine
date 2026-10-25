@@ -289,3 +289,12 @@ alter table public.canciones drop constraint if exists canciones_spotify_check;
 alter table public.canciones add constraint canciones_spotify_check check (spotify_id ~ '^[A-Za-z0-9]{22}$');
 alter table public.mood drop constraint if exists mood_check;
 alter table public.mood add constraint mood_check check (mood in ('😍','😊','😐','😔','🥺'));
+
+-- ---------- 9) Límites diarios ----------
+-- "Para vos": una foto por persona por día.
+alter table public.fotos_para_vos drop constraint if exists fotos_para_vos_uno_por_dia;
+alter table public.fotos_para_vos add constraint fotos_para_vos_uno_por_dia unique (fecha, remitente);
+-- Mensajes/quiz: una franja por persona por día (manana | mediodia | noche).
+alter table public.mensajes_diarios add column if not exists franja text;
+alter table public.mensajes_diarios drop constraint if exists mensajes_uno_por_franja;
+alter table public.mensajes_diarios add constraint mensajes_uno_por_franja unique (fecha, de, franja);

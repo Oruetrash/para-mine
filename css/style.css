@@ -463,3 +463,20 @@ button, .nav-btn, .mini-btn { touch-action: manipulation; }
 /* Fade-in de imágenes */
 img.fade { opacity: 0; transition: opacity .3s; }
 img.fade.in { opacity: 1; }
+
+/* ---------- Mensajes por franja ---------- */
+.compose-hint { font-size: 12.5px; color: var(--marron-claro); margin: -4px 0 10px; }
+.franja-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px dashed #e6d6c4; }
+.franja-row:last-child { border-bottom: 0; }
+.franja-ico { font-size: 18px; }
+.franja-label { font-weight: 600; color: var(--rojo); font-size: 14px; min-width: 84px; }
+.franja-btn { width: 40px; height: 40px; border-radius: 12px; border: 1.5px solid var(--dorado); background: var(--crema-claro); cursor: pointer; font-size: 16px; }
+.franja-msg { flex: 1; font-size: 13.5px; color: var(--marron-claro); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.franja-row.done { opacity: .8; }
+.env-picker { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e6d6c4; }
+
+/* ---------- Foto "para vos" en Inicio ---------- */
+.pv-inicio-card { background: var(--crema-claro); border-radius: 18px; padding: 14px; box-shadow: var(--sombra); margin-bottom: 16px; }
+.pv-inicio-card img, .pv-inicio-card video { width: 100%; border-radius: 12px; aspect-ratio: 3/4; object-fit: cover; background: #eadcc8; }
+.pv-inicio-label { font-weight: 600; color: var(--rojo); font-size: 14px; margin-bottom: 10px; }
+.pv-inicio-msg { margin-top: 10px; font-size: 14px; color: var(--marron-claro); font-style: italic; }

@@ -27,10 +27,10 @@ import { initCreador } from './features/creador.js';
 // Estado inicial
 set('who', localStorage.getItem('who') || 'el');
 set('signedUrls', {});
-set('pvTab', 'el');
 set('albumMode', 'mes');
 set('songTab', 'todos');
 set('envTipo', 'mensaje');
+set('envFranja', 'manana');
 set('advTipo', 'texto');
 ['fotos', 'notas', 'fotosDia', 'paraVos', 'mensajes', 'razones', 'arte', 'teQuiero', 'diario', 'planes', 'capsula', 'cartas', 'lugares', 'reto', 'mood', 'adviento', 'canciones'].forEach((k) => set(k, []));
 set('propuesta', null);

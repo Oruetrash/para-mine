@@ -88,7 +88,7 @@ export function openUploadModal(ctx) {
 // ---------- Modal "Para vos" ----------
 export function openPvModal() {
   const para = get('who') === 'el' ? 'ella' : 'el';
-  $('#pv-label').textContent = `Mandale una foto a ${para === 'el' ? 'Él' : 'Ella'}`;
+  $('#pv-label').textContent = `Tu foto de hoy para ${para === 'el' ? 'Él' : 'Ella'}`;
   $('#pv-input').value = '';
   $('#pv-text').value = '';
   openLayer($('#pv-modal'));

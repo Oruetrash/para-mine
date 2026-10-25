@@ -8,6 +8,12 @@ export const SLOTS = [
   { tipo: 'ella', label: 'Ella', icono: '🌹' },
 ];
 
+export const FRANJAS = [
+  { id: 'manana', label: 'Mañana', icono: '🌅' },
+  { id: 'mediodia', label: 'Mediodía', icono: '☀️' },
+  { id: 'noche', label: 'Noche', icono: '🌙' },
+];
+
 export function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }

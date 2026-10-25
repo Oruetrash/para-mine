@@ -1,5 +1,5 @@
-import { $, $$ } from '../lib/dom.js';
-import { get, on, set } from '../store/store.js';
+import { $ } from '../lib/dom.js';
+import { get, on } from '../store/store.js';
 import { fechaCorta, todayStr, whoLabel, escapeHtml } from '../lib/format.js';
 import { openUploadModal, openTextModal, openPvModal } from '../ui/layers.js';
 import { deferredRemove } from '../services/data.js';
@@ -46,15 +46,21 @@ function renderHoy() {
 function renderParaVos() {
   const wrap = $('#para-vos');
   wrap.innerHTML = '';
-  const items = (get('paraVos') || []).filter((f) => f.remitente === get('pvTab'));
+  const who = get('who');
+  const para = who === 'el' ? 'ella' : 'el';
+  const hoy = todayStr();
+  const today = (get('paraVos') || []).filter((f) => f.fecha === hoy);
+  const mia = today.find((f) => f.remitente === who);
+  const suya = today.find((f) => f.remitente === para);
   const urls = get('signedUrls') || {};
-  const add = document.createElement('button');
-  add.className = 'pv-add-btn';
-  add.textContent = '+ Enviar una foto para vos';
-  add.addEventListener('click', openPvModal);
-  wrap.appendChild(add);
-  if (!items.length) { wrap.insertAdjacentHTML('beforeend', '<p class="pv-empty">Todavía no hay fotos acá. 💌</p>'); return; }
-  items.forEach((f) => {
+
+  const btn = document.createElement('button');
+  btn.className = 'pv-add-btn';
+  if (mia) { btn.textContent = '✅ Ya enviaste tu foto de hoy'; btn.disabled = true; }
+  else { btn.textContent = '📸 Enviar mi foto de hoy'; btn.addEventListener('click', openPvModal); }
+  wrap.appendChild(btn);
+
+  [suya, mia].filter(Boolean).forEach((f) => {
     const div = document.createElement('div');
     div.className = 'pv-item';
     let body = '';
@@ -63,20 +69,16 @@ function renderParaVos() {
       const isVideo = (f.url || '').toLowerCase().endsWith('.mp4');
       body = isVideo ? `<video src="${url}" controls playsinline preload="metadata"></video>` : `<img src="${url}" data-full="${url}" class="fade" />`;
     }
-    div.innerHTML = body + `<div class="pv-meta"><button class="pv-del">🗑️</button><div class="pv-fecha">${fechaCorta(f.fecha)} · de ${whoLabel(f.remitente)}</div>${f.mensaje ? `<div class="pv-msg">"${escapeHtml(f.mensaje)}"</div>` : ''}</div>`;
+    div.innerHTML = body + `<div class="pv-meta"><button class="pv-del">🗑️</button><div class="pv-fecha">De ${whoLabel(f.remitente)}</div>${f.mensaje ? `<div class="pv-msg">"${escapeHtml(f.mensaje)}"</div>` : ''}</div>`;
     div.querySelector('.pv-del').addEventListener('click', () => { deferredRemove('paraVos', 'fotos_para_vos', f.id, { label: 'Borrado', paths: f.url ? [f.url] : [] }); });
     wrap.appendChild(div);
   });
 }
 
 export function initHoy() {
-  $$('.pv-tab').forEach((t) => t.addEventListener('click', () => {
-    set('pvTab', t.dataset.pv);
-    $$('.pv-tab').forEach((x) => x.classList.toggle('active', x === t));
-  }));
   on('fotosDia', renderHoy);
   on('signedUrls', renderHoy);
   on('paraVos', renderParaVos);
   on('signedUrls', renderParaVos);
-  on('pvTab', renderParaVos);
+  on('who', renderParaVos);
 }

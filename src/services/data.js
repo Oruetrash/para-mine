@@ -19,6 +19,7 @@ const FILTERS = {
   capsula: (q) => q.order('abre_en'),
   adviento: (q) => q.order('fecha'),
   mood: (q) => q.eq('fecha', todayStr()),
+  paraVos: (q) => q.eq('fecha', todayStr()),
 };
 
 async function fetchInto(table, query) {
@@ -55,21 +56,27 @@ async function loadTeQuiero() {
 const loaders = {
   historia: () => Promise.resolve(),
   inicio: async () => {
-    const fotos = await fotosRepo.list(FILTERS.fotos);
+    const [fotos, paraVos] = await Promise.all([
+      fotosRepo.list(FILTERS.fotos),
+      paraVosRepo.list(FILTERS.paraVos),
+    ]);
     set('fotos', fotos);
+    set('paraVos', paraVos);
     setStatus('fotos', 'ready');
+    setStatus('paraVos', 'ready');
     const cand = fotos.filter((f) => !(f.url || '').toLowerCase().endsWith('.mp4'));
     if (cand.length) {
       const foto = cand[Math.floor(Math.random() * cand.length)];
       set('recuerdo', foto);
       await signInto([foto.url]);
     }
+    await signInto(paraVos.map((p) => p.url));
   },
   hoy: async () => {
     const [fotosDia, mensajes, paraVos] = await Promise.all([
       fotosDiaRepo.list(FILTERS.fotosDia),
       mensajesRepo.list(FILTERS.mensajes),
-      paraVosRepo.list(),
+      paraVosRepo.list(FILTERS.paraVos),
     ]);
     set('fotosDia', fotosDia); set('mensajes', mensajes); set('paraVos', paraVos);
     setStatus('fotosDia', 'ready'); setStatus('mensajes', 'ready'); setStatus('paraVos', 'ready');
@@ -200,7 +207,7 @@ export async function saveTextAction(action, texto, extra, id) {
       const { error } = await db.from('fotos_dia').upsert({ fecha: hoy, url: null, nota: texto }, { onConflict: 'fecha' });
       if (error) throw error; table = 'fotosDia'; break;
     }
-    case 'envio': await sendEnvio(texto); return;
+    case 'envio': await sendEnvio(texto, get('envFranja')); return;
     case 'respuesta': {
       const { error } = await db.from('mensajes_diarios').update({ respuesta: texto }).eq('id', id);
       if (error) throw error; table = 'mensajes'; break;
@@ -292,6 +299,8 @@ export async function doUpload(ctx, file) {
 }
 
 export async function sendParaVos(file, msg) {
+  const who = get('who');
+  if ((get('paraVos') || []).some((p) => p.remitente === who)) throw new Error('Ya enviaste tu foto hoy');
   const ext = '.' + (file.name.split('.').pop() || 'jpg').toLowerCase();
   const safe = sanitizeBase(file.name);
   const storagePath = `para_vos/${safe}_${Date.now()}${ext}`;
@@ -385,11 +394,11 @@ export function toggleDestacada(id) {
   );
 }
 
-export async function sendEnvio(texto) {
+export async function sendEnvio(texto, franja) {
   const who = get('who');
   const tipo = get('envTipo');
   const para = who === 'el' ? 'ella' : 'el';
-  const { error } = await db.from('mensajes_diarios').insert({ fecha: todayStr(), tipo, texto, de: who });
+  const { error } = await db.from('mensajes_diarios').insert({ fecha: todayStr(), tipo, texto, de: who, franja: franja || null });
   if (error) throw error;
   sendPush(para, tipo === 'quiz' ? 'Nuevo quiz de ' + whoLabel(who) : 'Un mensaje de ' + whoLabel(who), texto);
   await refetchTable('mensajes');
