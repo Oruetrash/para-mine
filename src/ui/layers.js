@@ -13,7 +13,8 @@ export const setView = (v) => { view = v; };
 export const layersCount = () => layers.length;
 
 export function openLayer(el, onClose) {
-  el.classList.remove('hidden');
+  if (el.tagName === 'DIALOG') el.showModal();
+  else el.classList.remove('hidden');
   layers.push({ el, onClose });
   history.pushState({ layer: layers.length }, '');
 }
@@ -22,7 +23,11 @@ export function closeTop() { if (layers.length) history.back(); }
 
 export function closeLayerTop() {
   const top = layers.pop();
-  if (top) { top.el.classList.add('hidden'); top.onClose?.(); }
+  if (top) {
+    if (top.el.tagName === 'DIALOG') top.el.close();
+    else top.el.classList.add('hidden');
+    top.onClose?.();
+  }
   return !!top;
 }
 
@@ -44,7 +49,12 @@ export function initHistory(onView) {
       ensure(view);
     }
   });
-  addEventListener('keydown', (e) => { if (e.key === 'Escape') closeTop(); });
+  // ESC: los <dialog> lo manejan vía el evento `cancel`; acá cubrimos lightbox/mas-menu.
+  addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const top = layers[layers.length - 1];
+    if (top && top.el.tagName !== 'DIALOG') closeTop();
+  });
 }
 
 // ---------- Lightbox ----------
@@ -128,6 +138,9 @@ export function setAdvTipo(tipo) {
 
 export function initLayers() {
   initLightbox();
+
+  // ESC en un <dialog> dispara `cancel`; lo convertimos en cierre por la pila de capas.
+  $$('dialog').forEach((dlg) => dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeTop(); }));
 
   $('#text-cancel').addEventListener('click', closeTop);
   $('#text-save').addEventListener('click', async () => {
