@@ -15,7 +15,7 @@ const FILTERS = {
   fotos: (q) => q.order('creado_en'),
   notas: (q) => q.order('creado_en'),
   fotosDia: (q) => q.gte('fecha', daysAgo(14)),
-  mensajes: (q) => q.eq('de', get('who') === 'el' ? 'ella' : 'el').order('creado_en', { ascending: false }).limit(10),
+  mensajes: (q) => q.eq('fecha', todayStr()).order('creado_en', { ascending: false }),
   capsula: (q) => q.order('abre_en'),
   adviento: (q) => q.order('fecha'),
   mood: (q) => q.eq('fecha', todayStr()),
