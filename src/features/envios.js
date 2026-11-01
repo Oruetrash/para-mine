@@ -85,5 +85,4 @@ function renderPicker(picker, tipo) {
 export function initEnvios() {
   on('mensajes', renderEnvios);
   on('who', renderEnvios);
-  on('envTipo', renderEnvios);
 }
