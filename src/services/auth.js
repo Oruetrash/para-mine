@@ -24,14 +24,24 @@ export function initAuthEvents() {
 export async function resolveServer() {
   try {
     const [who, hoy] = await Promise.all([db.rpc('me'), db.rpc('hoy')]);
-    if (who.data) { set('serverWho', who.data); set('who', who.data); localStorage.setItem('who', who.data); }
+    if (who.error || !who.data) {
+      // Sesión inválida/expirada (p. ej. tras la pausa de Supabase): forzar re-login.
+      await db.auth.signOut();
+      location.reload();
+      return;
+    }
+    set('serverWho', who.data); set('who', who.data); localStorage.setItem('who', who.data);
     if (hoy.data) set('serverToday', hoy.data);
-  } catch (e) {}
+  } catch (e) {
+    await db.auth.signOut();
+    location.reload();
+  }
 }
 
 export async function checkSession() {
-  const { data } = await db.auth.getSession();
-  return !!data.session;
+  // getUser() valida contra el servidor (a diferencia de getSession, que lee local).
+  const { data, error } = await db.auth.getUser();
+  return !error && !!data.user;
 }
 
 export function showLogin() {

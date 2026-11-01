@@ -3,6 +3,7 @@ import { get, on, set } from '../store/store.js';
 import { CONFIG } from '../config.js';
 import { fechaCorta, whoLabel, escapeHtml, pickN, FRANJAS } from '../lib/format.js';
 import { openTextModal } from '../ui/layers.js';
+import { toast } from '../ui/toast.js';
 import { sendEnvio } from '../services/data.js';
 
 function renderEnvios() {
@@ -74,7 +75,9 @@ function renderPicker(picker, tipo) {
   picker.querySelectorAll('[data-env]').forEach((b) => b.addEventListener('click', () => {
     const val = b.dataset.env;
     if (val === 'propio') openTextModal('Escribí el tuyo', '', 'envio');
-    else sendEnvio(val, get('envFranja')).catch(() => {});
+    else sendEnvio(val, get('envFranja')).catch((e) => {
+      toast.error(e?.message?.includes('duplicate') ? 'Ya mandaste algo en esa franja hoy' : (e?.message || 'No se pudo enviar'));
+    });
     picker.classList.add('hidden');
   }));
 }
