@@ -3,8 +3,10 @@
 // Secrets: ONESIGNAL_APP_ID y ONESIGNAL_REST_KEY (ya están en el vault del proyecto).
 Deno.serve(async (req) => {
   const apikey = req.headers.get('apikey') || '';
+  const auth = req.headers.get('authorization') || '';
   const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-  if (!serviceRole || apikey !== serviceRole) {
+  const ok = serviceRole && (apikey === serviceRole || auth === `Bearer ${serviceRole}`);
+  if (!ok) {
     return new Response('unauthorized', { status: 401 });
   }
 

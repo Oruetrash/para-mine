@@ -2,3 +2,4 @@ project_id = "sswyltqxarvkvpcpbqrf"
 
 [functions.reminders]
 verify_jwt = false
+schedule = "0 15 * * *"
