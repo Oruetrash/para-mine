@@ -1,0 +1,5 @@
+project_id = "sswyltqxarvkvpcpbqrf"
+
+[functions.reminders]
+# 15:00 UTC = 12:00 en Asunción (UTC-3, horario de verano). Ajustá si cambia el huso.
+schedule = "0 15 * * *"

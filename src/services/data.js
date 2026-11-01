@@ -180,6 +180,13 @@ async function addSignedUrl(path) {
   if (u) set('signedUrls', { ...(get('signedUrls') || {}), [path]: u });
 }
 
+// Notifica al otro que hubo actividad (para saber que se está usando la página).
+function notifyActivity() {
+  const who = get('who');
+  const para = who === 'el' ? 'ella' : 'el';
+  sendPush(para, '💫 Nueva actividad', whoLabel(who) + ' agregó algo en la página. ¡Mirá!');
+}
+
 // Borrado diferido: quita optimista, muestra toast con "Deshacer" y commitea al expirar.
 export function deferredRemove(storeKey, table, id, { label = 'Borrado', paths = [] } = {}) {
   const prev = get(storeKey);
@@ -257,6 +264,7 @@ export async function saveTextAction(action, texto, extra, id) {
   }
   if (action === 'paravos') { const para = who === 'el' ? 'ella' : 'el'; sendPush(para, '💌', 'Tenés una foto/mensaje nuevo.'); }
   await refetchTable(table);
+  if (action !== 'respuesta' && action !== 'paravos') notifyActivity();
 }
 
 export async function doUpload(ctx, file) {
@@ -293,6 +301,7 @@ export async function doUpload(ctx, file) {
         const { error: inErr } = await db.from('fotos').insert({ anio, mes, tipo: slot, url: fullPath, thumb: thumbPath, subido_por: 'app' });
         if (inErr) throw inErr;
         await refetchTable('fotos');
+        notifyActivity();
         return;
       }
     }
@@ -305,6 +314,7 @@ export async function doUpload(ctx, file) {
   if (inErr) throw inErr;
   await refetchTable(table);
   await addSignedUrl(storagePath);
+  notifyActivity();
 }
 
 export async function sendParaVos(file, msg) {
@@ -372,6 +382,7 @@ export async function saveAdviento(fecha, tipo, titulo, texto, url, file, existi
   if (error) throw error;
   await refetchTable('adviento');
   if (tipo === 'foto' && urlOut) await addSignedUrl(urlOut);
+  notifyActivity();
 }
 
 export async function sendTeQuiero() {
@@ -386,6 +397,7 @@ export async function saveMood(mood) {
   const { error } = await db.from('mood').insert({ fecha: todayStr(), mood, autor: get('who') });
   if (error) throw error;
   await refetchTable('mood');
+  notifyActivity();
 }
 
 export function toggleHecho(table, id, value) {
