@@ -2,7 +2,10 @@ import { db } from '../lib/supabase.js';
 import { CONFIG } from '../config.js';
 
 export async function sendPush(to, title, body) {
-  try { await db.functions.invoke('send-push', { body: { to, title, text: body } }); } catch (e) {}
+  try {
+    const { error } = await db.functions.invoke('send-push', { body: { to, title, text: body } });
+    if (error) console.error('send-push:', error);
+  } catch (e) { console.error('send-push:', e); }
 }
 
 let oneSignalScriptLoaded = false;
