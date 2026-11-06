@@ -1,4 +1,4 @@
-const CACHE = 'mine-v2';
+const CACHE = 'mine-v3';
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
@@ -19,9 +19,9 @@ self.addEventListener('fetch', (e) => {
   const r = e.request;
   if (r.method !== 'GET') return;
   if (r.mode === 'navigate' || /\.(js|css)$/.test(new URL(r.url).pathname)) {
-    // network-first
+    // network-first sin caché HTTP (GitHub Pages cachea 10 min)
     e.respondWith(
-      fetch(r)
+      fetch(r, { cache: 'no-store' })
         .then((res) => {
           const c = res.clone();
           caches.open(CACHE).then((x) => x.put(r, c));
