@@ -338,7 +338,7 @@ html, body {
 .lightbox img { max-width: 100%; max-height: 88vh; border-radius: 14px; object-fit: contain; }
 .lightbox-close { position: absolute; top: -34px; right: 0; color: #fff; font-size: 26px; cursor: pointer; }
 .modal { position: fixed; inset: 0; background: rgba(20,10,8,.5); z-index: 150; display: flex; align-items: center; justify-content: center; padding: 20px; }
-.modal-card { background: var(--crema-claro); border-radius: 22px; padding: 24px; width: 100%; max-width: 400px; box-shadow: var(--sombra); }
+.modal-card { background: var(--crema-claro); border-radius: 22px; padding: 24px; width: 100%; max-width: 400px; box-shadow: var(--sombra); max-height: 85vh; max-height: calc(100dvh - 40px); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 .modal-card h3 { color: var(--rojo); margin-bottom: 12px; font-family: 'Cormorant Garamond', serif; }
 .modal-card textarea, .modal-card input[type=file], .modal-card input[type=text], .modal-card input[type=date] { width: 100%; border-radius: 12px; border: 1.5px solid #e6d6c4; padding: 12px; font-family: inherit; font-size: 15px; outline: none; resize: none; background: #fff; }
 .modal-card textarea { margin-bottom: 8px; }
