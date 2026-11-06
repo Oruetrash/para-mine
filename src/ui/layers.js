@@ -12,8 +12,31 @@ export const getView = () => view;
 export const setView = (v) => { view = v; };
 export const layersCount = () => layers.length;
 
+let lockedY = 0;
+
+function lockBody() {
+  if (document.body.dataset.locked) return;
+  lockedY = window.scrollY || 0;
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${lockedY}px`;
+  document.body.style.left = '0';
+  document.body.style.right = '0';
+  document.body.dataset.locked = '1';
+}
+
+function unlockBody() {
+  if (!document.body.dataset.locked) return;
+  delete document.body.dataset.locked;
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.left = '';
+  document.body.style.right = '';
+  window.scrollTo(0, lockedY);
+}
+
 export function openLayer(el, onClose) {
   el.classList.remove('hidden');
+  lockBody();
   layers.push({ el, onClose });
   history.pushState({ layer: layers.length }, '');
 }
@@ -23,6 +46,7 @@ export function closeTop() { if (layers.length) history.back(); }
 export function closeLayerTop() {
   const top = layers.pop();
   if (top) { top.el.classList.add('hidden'); top.onClose?.(); }
+  if (!layers.length) unlockBody();
   return !!top;
 }
 
