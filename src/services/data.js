@@ -360,6 +360,8 @@ export async function saveAdviento(fecha, tipo, titulo, texto, url, file, existi
   if (tipo === 'texto') {
     textoOut = texto;
     if (!textoOut) throw new Error('Escribí la sorpresa');
+  } else if (tipo === 'juego' || tipo === 'quiz') {
+    textoOut = texto || null;
   } else if (tipo === 'foto') {
     if (file) {
       const ext = '.' + (file.name.split('.').pop() || 'jpg').toLowerCase();

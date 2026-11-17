@@ -99,6 +99,10 @@ export const CONFIG = {
     '¿Qué te gustaría que hiciéramos más seguido?',
   ],
 
+  // Preguntas extra para las puertas de tipo "quiz" (opcional).
+  // Formato: { pregunta: '¿...?', opciones: ['A', 'B', 'C'], correcta: 1 }
+  BANK_TRIVIA: [],
+
   // Banco de mensajes para la notificación diaria
   BANK_MENSAJES: [
     'Hoy también te elijo a vos.',

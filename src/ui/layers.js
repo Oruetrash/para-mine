@@ -135,7 +135,8 @@ export function openAdventModal(fecha, entry) {
   set('advFecha', fecha);
   $('#adviento-titulo').textContent = `Puerta del ${fechaCorta(fecha)}`;
   $('#adv-titulo').value = entry?.titulo || '';
-  $('#adv-texto').value = entry?.tipo === 'texto' ? (entry.texto || '') : '';
+  const conTexto = ['texto', 'juego', 'quiz'].includes(entry?.tipo);
+  $('#adv-texto').value = conTexto ? (entry.texto || '') : '';
   $('#adv-foto').value = '';
   $('#adv-cancion').value = entry?.tipo === 'cancion' ? (entry.url || '') : '';
   setAdvTipo(entry?.tipo || 'texto');
@@ -145,7 +146,14 @@ export function openAdventModal(fecha, entry) {
 export function setAdvTipo(tipo) {
   set('advTipo', tipo);
   $$('#adv-tipo button').forEach((b) => b.classList.toggle('active', b.dataset.tipo === tipo));
-  $('#adv-texto').classList.toggle('hidden', tipo !== 'texto');
+  const mostrarTexto = ['texto', 'juego', 'quiz'].includes(tipo);
+  const txt = $('#adv-texto');
+  txt.classList.toggle('hidden', !mostrarTexto);
+  txt.placeholder = tipo === 'juego'
+    ? 'Mensaje cuando gane (opcional)'
+    : tipo === 'quiz'
+      ? 'Mensaje final del quiz (opcional)'
+      : 'Escribí la sorpresa…';
   $('#adv-foto').classList.toggle('hidden', tipo !== 'foto');
   $('#adv-cancion').classList.toggle('hidden', tipo !== 'cancion');
 }

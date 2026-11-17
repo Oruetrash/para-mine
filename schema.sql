@@ -111,7 +111,7 @@ create table if not exists public.adviento (
   id uuid primary key default gen_random_uuid(),
   fecha date not null unique,
   titulo text,
-  tipo text not null default 'texto',   -- 'texto' | 'foto' | 'cancion'
+  tipo text not null default 'texto',   -- 'texto' | 'foto' | 'cancion' | 'juego' | 'quiz'
   texto text,
   url text,                              -- path de storage (foto) o spotify_id (cancion)
   creado_en timestamptz default now()

@@ -6,6 +6,17 @@ import { openAdventModal, openLayer } from '../ui/layers.js';
 import { signUrl } from '../services/storage.js';
 import { mountSpotifyFacades } from '../ui/spotify.js';
 import { startReveal } from './cofre.js';
+import { mountJuego } from './juego.js';
+import { mountQuiz } from './quiz.js';
+
+let doorCleanup = null;
+
+function clearDoor() {
+  if (!doorCleanup) return;
+  const fn = doorCleanup;
+  doorCleanup = null;
+  try { fn(); } catch (e) {}
+}
 
 function previewCumple() {
   return new URLSearchParams(location.search).get('preview') === '1' && get('serverWho') === 'el';
@@ -41,7 +52,7 @@ function renderCalendario() {
     } else if (!abierta) {
       html += `<div class="cal-door locked"><span class="cal-num">${n}</span><span class="cal-ico">🔒</span><span class="cal-txt">${fechaCorta(ds)}</span></div>`;
     } else {
-      const ico = entry ? (entry.tipo === 'foto' ? '📷' : entry.tipo === 'cancion' ? '🎵' : '💌') : '✨';
+      const ico = entry ? (entry.tipo === 'foto' ? '📷' : entry.tipo === 'cancion' ? '🎵' : entry.tipo === 'juego' ? '🎮' : entry.tipo === 'quiz' ? '🎯' : '💌') : '✨';
       html += `<button class="cal-door open ${esHoy && !esPreview ? 'today' : ''}" data-day="${ds}">
         <span class="cal-num">${n}</span><span class="cal-ico">${ico}</span>
         <span class="cal-txt">${esPreview ? fechaCorta(ds) : (esHoy ? '¡Hoy!' : fechaCorta(ds))}</span></button>`;
@@ -53,22 +64,32 @@ function renderCalendario() {
 }
 
 async function openDoor(fecha) {
+  clearDoor();
   if (fecha === dateStr(CONFIG.CUMPLE)) { startReveal(); return; }
   const entry = (get('adviento') || []).find((a) => a.fecha === fecha);
   const c = $('#door-content');
   c.innerHTML = `<div class="door-fecha">${fechaCorta(fecha)}</div>`;
+  let montar = null;
+  const titulo = entry?.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : '';
   if (!entry) {
     c.innerHTML += `<div class="door-empty">Todavía no hay nada acá para este día… 😉</div>`;
   } else if (entry.tipo === 'foto') {
     const u = await signUrl(entry.url);
-    c.innerHTML += `${entry.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : ''}<img src="${u || ''}" alt="sorpresa" class="fade" />`;
+    c.innerHTML += `${titulo}<img src="${u || ''}" alt="sorpresa" class="fade" />`;
   } else if (entry.tipo === 'cancion') {
-    c.innerHTML += `${entry.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : ''}<div class="sp-mount" data-spotify="${escapeHtml(entry.url)}" data-label="${escapeHtml(entry.titulo || 'Reproducir')}"></div>`;
+    c.innerHTML += `${titulo}<div class="sp-mount" data-spotify="${escapeHtml(entry.url)}" data-label="${escapeHtml(entry.titulo || 'Reproducir')}"></div>`;
+  } else if (entry.tipo === 'juego') {
+    c.innerHTML += `${titulo}<div class="game-mount"></div>`;
+    montar = () => mountJuego(c.querySelector('.game-mount'), { mensaje: entry.texto || '' });
+  } else if (entry.tipo === 'quiz') {
+    c.innerHTML += `${titulo}<div class="quiz-mount"></div>`;
+    montar = () => mountQuiz(c.querySelector('.quiz-mount'), { mensaje: entry.texto || '' });
   } else {
-    c.innerHTML += `${entry.titulo ? `<div class="door-titulo">${escapeHtml(entry.titulo)}</div>` : ''}<div class="door-texto">${escapeHtml(entry.texto || '')}</div>`;
+    c.innerHTML += `${titulo}<div class="door-texto">${escapeHtml(entry.texto || '')}</div>`;
   }
-  openLayer($('#door-modal'));
+  openLayer($('#door-modal'), clearDoor);
   mountSpotifyFacades($('#door-content'));
+  if (montar) doorCleanup = montar();
 }
 
 export function renderAdventAdmin() {
@@ -87,9 +108,14 @@ export function renderAdventAdmin() {
       return;
     }
     const entry = (get('adviento') || []).find((a) => a.fecha === ds);
-    const resumen = entry
-      ? (entry.tipo === 'foto' ? '📷 ' + (entry.titulo || 'Foto') : entry.tipo === 'cancion' ? '🎵 Canción' : '💬 ' + ((entry.texto || '').slice(0, 26)))
-      : '— vacío —';
+    let resumen = '— vacío —';
+    if (entry) {
+      if (entry.tipo === 'foto') resumen = '📷 ' + (entry.titulo || 'Foto');
+      else if (entry.tipo === 'cancion') resumen = '🎵 Canción';
+      else if (entry.tipo === 'juego') resumen = '🎮 ' + (entry.titulo || 'Juego');
+      else if (entry.tipo === 'quiz') resumen = '🎯 ' + (entry.titulo || 'Quiz');
+      else resumen = '💬 ' + ((entry.texto || '').slice(0, 26));
+    }
     const row = document.createElement('div');
     row.className = 'adv-row';
     row.innerHTML = `<span class="adv-dia">Día ${i + 1}</span><span class="adv-resumen">${escapeHtml(resumen)} · ${fechaCorta(ds)}</span><button class="mini-btn" data-adv="${ds}">✏️</button>`;
