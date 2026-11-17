@@ -46,10 +46,16 @@ function abrirJuego(id) {
   if (!mount) return;
   clearGame();
   const content = $('#game-content');
-  if (!content) return;
+  const modal = $('#game-modal');
+  if (!content || !modal) return;
   content.innerHTML = '<div class="arcade-mount"></div>';
+  modal.dataset.game = id;
   gameCleanup = mount(content.querySelector('.arcade-mount'), { onExit: closeTop });
-  openLayer($('#game-modal'), () => { clearGame(); renderJuegos(); });
+  openLayer(modal, () => {
+    delete modal.dataset.game;
+    clearGame();
+    renderJuegos();
+  });
 }
 
 function renderJuegos() {

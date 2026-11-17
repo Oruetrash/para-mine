@@ -1,100 +1,105 @@
 import { formatScore, getRecord, saveRecord } from './records.js';
 
-const GW = 40;
-const GH = 64;
+const P_COLS = 15;
+const P_ROWS = 20;
+const SCALE = 10;
+const GW = P_COLS * SCALE;
+const GH = P_ROWS * SCALE;
 const BW = 360;
-const BH = 512;
+const BH = 480;
 const CW = BW / GW;
 const CH = BH / GH;
-const DANGER_ROW = 6;
-const SCALE = 2;
-const SIM_STEP = 1 / 90;
+const DANGER_ROW = 24;
+const STEP_MS = 12;
 
-const COLORS = ['#dfa05d', '#d46d6d', '#6fae9b', '#8595cf', '#d6b54b', '#af82bf'];
+const COLORS = ['#ff5a5f', '#3fb950', '#4c9bff', '#ffcd3c', '#b57bff', '#ff9d4c'];
 const PALETTE = [
-  [223, 160, 93],
-  [212, 109, 109],
-  [111, 174, 155],
-  [133, 149, 207],
-  [214, 181, 75],
-  [175, 130, 191],
+  [255, 90, 95],
+  [63, 185, 80],
+  [76, 155, 255],
+  [255, 205, 60],
+  [181, 123, 255],
+  [255, 157, 76],
 ];
-const SHADES = PALETTE.map(([r, g, b]) => [0.88, 0.96, 1.04, 1.1].map((f) => [
-  Math.min(255, Math.round(r * f)),
-  Math.min(255, Math.round(g * f)),
-  Math.min(255, Math.round(b * f)),
-]));
+const DARKPAL = [
+  [216, 58, 64],
+  [44, 154, 60],
+  [53, 127, 224],
+  [230, 178, 31],
+  [151, 88, 230],
+  [230, 130, 44],
+];
 
-const SHAPES = [
-  [[0, 0]],
-  [[0, 0], [1, 0]],
-  [[0, 0], [0, 1]],
-  [[0, 0], [1, 0], [2, 0]],
-  [[0, 0], [0, 1], [0, 2]],
-  [[0, 0], [0, 1], [1, 1]],
-  [[0, 0], [1, 0], [1, 1]],
-  [[0, 0], [0, 1], [1, 0], [1, 1]],
-  [[0, 0], [1, 0], [2, 0], [1, 1]],
-  [[0, 1], [1, 0], [1, 1]],
-  [[0, 0], [1, 0], [1, 1], [2, 1]],
+const RAW_SHAPES = [
+  { id: 'I', cells: [[0, 0], [1, 0], [2, 0], [3, 0]] },
+  { id: 'O', cells: [[0, 0], [1, 0], [0, 1], [1, 1]] },
+  { id: 'T', cells: [[0, 0], [1, 0], [2, 0], [1, 1]] },
+  { id: 'L', cells: [[0, 0], [0, 1], [0, 2], [1, 2]] },
+  { id: 'J', cells: [[1, 0], [1, 1], [1, 2], [0, 2]] },
+  { id: 'S', cells: [[1, 0], [2, 0], [0, 1], [1, 1]] },
+  { id: 'Z', cells: [[0, 0], [1, 0], [1, 1], [2, 1]] },
+  { id: 'dot', cells: [[0, 0]] },
+  { id: 'line2', cells: [[0, 0], [1, 0]] },
+  { id: 'line3', cells: [[0, 0], [1, 0], [2, 0]] },
+  { id: 'square3', cells: [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2]] },
 ];
+
+const SHAPES = RAW_SHAPES.map(({ id, cells }) => {
+  const minR = Math.min(...cells.map((c) => c[0]));
+  const minC = Math.min(...cells.map((c) => c[1]));
+  const norm = cells.map(([r, c]) => [r - minR, c - minC]);
+  return {
+    id,
+    cells: norm,
+    w: Math.max(...norm.map((c) => c[1])) + 1,
+    h: Math.max(...norm.map((c) => c[0])) + 1,
+  };
+});
 
 const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
-const rand = (min, max) => min + Math.random() * (max - min);
-
-function crearPieza() {
-  const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
-  const minR = Math.min(...shape.map((c) => c[0]));
-  const minC = Math.min(...shape.map((c) => c[1]));
-  const cells = shape.map(([r, c]) => [r - minR, c - minC]);
-  const w = Math.max(...cells.map((c) => c[1])) + 1;
-  const h = Math.max(...cells.map((c) => c[0])) + 1;
-  const grains = [];
-  cells.forEach(([r, c]) => {
-    for (let dr = 0; dr < SCALE; dr++) {
-      for (let dc = 0; dc < SCALE; dc++) grains.push([r * SCALE + dr, c * SCALE + dc]);
-    }
-  });
-  return {
-    cells,
-    w,
-    h,
-    gw: w * SCALE,
-    gh: h * SCALE,
-    grains,
-    color: 1 + Math.floor(Math.random() * COLORS.length),
-  };
-}
-
-function nuevasPiezas() {
-  return [crearPieza(), crearPieza(), crearPieza()];
-}
+const esOscuro = (x, y) => ((x * 73856093 ^ y * 19349663) >>> 0) % 10 < 3;
 
 export function mountSandBlast(container, { onExit } = {}) {
   container.innerHTML = `
-    <div class="arcade-game sb2-game">
-      <div class="arcade-title">🏖️ Sand Blast</div>
-      <div class="arcade-hud">
-        <span class="arcade-score">Puntaje <b>0</b></span>
-        <span class="arcade-best">🏆 <b>0</b></span>
+    <div class="arcade-game sb3-game">
+      <div class="sb3-hud">
+        <div class="sb3-scorebox">
+          <div class="sb3-topline">
+            <span>Puntaje</span>
+            <span class="sb3-best">♛ <b>0</b></span>
+            <span class="sb3-goal">1.000</span>
+          </div>
+          <strong class="sb3-score">0</strong>
+          <div class="sb3-meter"><i></i></div>
+        </div>
+        <div class="sb3-tools">
+          <button type="button" class="sb3-tool sb3-fs" aria-label="Pantalla completa" title="Pantalla completa">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+            </svg>
+          </button>
+          <button type="button" class="sb3-tool sb3-close" aria-label="Cerrar juego">✕</button>
+        </div>
       </div>
-      <div class="sb2-stage" tabindex="0" aria-label="Sand Blast. Elegí una pieza y tocá una columna para soltar la arena.">
-        <canvas class="sb2-canvas"></canvas>
+      <div class="sb3-stage" tabindex="0" aria-label="Tablero de Sand Blast. Arrastrá una pieza de la bandeja al tablero.">
+        <canvas class="sb3-canvas"></canvas>
       </div>
-      <div class="sb2-dock" aria-label="Piezas disponibles"></div>
-      <p class="arcade-hint">Elegí una pieza, mantené apretado para apuntar y soltá para dejar caer la arena. Completá una línea para reventarla.</p>
-      <div class="arcade-actions"><button type="button" class="btn-big ghost sb2-restart">Reiniciar</button></div>
+      <div class="sb3-tray" aria-label="Piezas disponibles"></div>
+      <p class="sb3-hint">Arrastrá una pieza al tablero. Conectá arena del mismo color de pared a pared para reventarla.</p>
       <div class="arcade-overlay hidden"></div>
     </div>`;
 
-  const stage = container.querySelector('.sb2-stage');
-  const canvas = container.querySelector('.sb2-canvas');
+  const stage = container.querySelector('.sb3-stage');
+  const canvas = container.querySelector('.sb3-canvas');
   const ctx = canvas.getContext('2d');
-  const dock = container.querySelector('.sb2-dock');
-  const scoreEl = container.querySelector('.arcade-score b');
-  const bestEl = container.querySelector('.arcade-best b');
+  const trayEl = container.querySelector('.sb3-tray');
+  const scoreEl = container.querySelector('.sb3-score');
+  const bestEl = container.querySelector('.sb3-best b');
+  const meterEl = container.querySelector('.sb3-meter i');
   const overlay = container.querySelector('.arcade-overlay');
-  const restartBtn = container.querySelector('.sb2-restart');
+  const fsBtn = container.querySelector('.sb3-fs');
+  const closeBtn = container.querySelector('.sb3-close');
+  const card = container.closest('.arcade-card');
 
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   canvas.width = BW * dpr;
@@ -109,117 +114,212 @@ export function mountSandBlast(container, { onExit } = {}) {
   const pixels = sandImg.data;
 
   let grid = new Uint8Array(GW * GH);
-  let pieces = nuevasPiezas();
-  let selected = 0;
+  let tray = [];
+  let block = null;
+  let state = 'ready';
   let score = 0;
   let best = getRecord('sandblast');
+  let combo = 0;
+  let settles = 0;
+  let acc = 0;
   let over = false;
   let running = false;
   let raf = 0;
   let last = 0;
-  let simAcc = 0;
-  let settle = 0;
-  let settling = false;
-  let hoverCol = Math.floor(GW / 2);
   let flashes = [];
   let bursts = [];
   let labels = [];
-  let combo = 0;
-  let comboTimer = 0;
+  let drag = null;
   let invalidTimer = 0;
-  let pointerActive = false;
 
-  function idx(x, y) { return y * GW + x; }
+  const idx = (x, y) => y * GW + x;
+
+  function colorLimit() {
+    if (score < 3000) return 3;
+    if (score < 12000) return 4;
+    if (score < 40000) return 5;
+    return 6;
+  }
+
+  function randColor() {
+    return 1 + Math.floor(Math.random() * colorLimit());
+  }
+
+  function randPiece() {
+    const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+    return { shape, color: randColor() };
+  }
+
+  function refillTray() {
+    tray = [randPiece(), randPiece(), randPiece()];
+  }
 
   function updateHud() {
     scoreEl.textContent = formatScore(score);
     bestEl.textContent = formatScore(best);
-  }
-
-  function puedeEn(piece, start) {
-    if (start < 0 || start + piece.gw > GW) return false;
-    for (const [r, c] of piece.grains) if (grid[idx(start + c, r)]) return false;
-    return true;
-  }
-
-  function puedeEnAlgunLado(piece) {
-    for (let start = 0; start <= GW - piece.gw; start++) if (puedeEn(piece, start)) return true;
-    return false;
-  }
-
-  function inicioPara(piece) {
-    return clamp(hoverCol - Math.floor(piece.gw / 2), 0, GW - piece.gw);
+    meterEl.style.width = `${Math.min(100, (score / 1000) * 100)}%`;
   }
 
   function previewHtml(piece) {
-    if (!piece) return '<span class="sb2-piece-empty">✓</span>';
-    const filled = new Set(piece.cells.map(([r, c]) => `${r},${c}`));
-    let html = `<span class="sb2-piece-preview" style="grid-template-columns:repeat(${piece.w}, 12px);grid-auto-rows:12px">`;
-    for (let r = 0; r < piece.h; r++) {
-      for (let c = 0; c < piece.w; c++) {
+    if (!piece) return '<span class="sb3-slot-empty">✓</span>';
+    const { shape, color } = piece;
+    const filled = new Set(shape.cells.map(([r, c]) => `${r},${c}`));
+    let html = `<span class="sb3-piece" style="grid-template-columns:repeat(${shape.w}, 16px);grid-auto-rows:16px">`;
+    for (let r = 0; r < shape.h; r++) {
+      for (let c = 0; c < shape.w; c++) {
         const on = filled.has(`${r},${c}`);
-        html += `<span class="sb2-prev-cell${on ? ' on' : ''}"${on ? ` style="--c:${COLORS[piece.color - 1]}"` : ''}></span>`;
+        html += `<span class="sb3-block${on ? ' on' : ''}"${on ? ` style="--c:${COLORS[color - 1]}"` : ''}></span>`;
       }
     }
     return html + '</span>';
   }
 
-  function renderDock() {
-    dock.innerHTML = '';
-    pieces.forEach((piece, i) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'sb2-piece' + (i === selected ? ' active' : '') + (piece ? '' : ' empty');
-      b.disabled = !piece || over;
-      b.innerHTML = previewHtml(piece);
-      b.setAttribute('aria-label', piece ? `Elegir pieza ${i + 1}` : `Pieza ${i + 1} usada`);
-      b.addEventListener('click', () => {
-        if (over || !piece) return;
-        selected = i;
-        hoverCol = Math.floor(GW / 2);
-        renderDock();
-      });
-      dock.appendChild(b);
+  function renderTray() {
+    trayEl.innerHTML = '';
+    tray.forEach((piece, i) => {
+      const slot = document.createElement('button');
+      slot.type = 'button';
+      slot.className = 'sb3-slot';
+      slot.disabled = over;
+      slot.innerHTML = previewHtml(piece);
+      slot.setAttribute('aria-label', `Arrastrar pieza ${i + 1}`);
+      slot.addEventListener('pointerdown', (e) => iniciarDrag(e, i, slot));
+      trayEl.appendChild(slot);
     });
   }
 
-  function flashInvalid() {
-    stage.classList.remove('sb2-invalid');
-    void stage.offsetWidth;
-    stage.classList.add('sb2-invalid');
-    clearTimeout(invalidTimer);
-    invalidTimer = setTimeout(() => stage.classList.remove('sb2-invalid'), 320);
-  }
-
-  function soltar(col) {
-    if (over || !running) return;
-    const piece = pieces[selected];
+  function actualizarDrag(clientX, clientY) {
+    if (!drag) return;
+    const piece = tray[drag.i];
     if (!piece) return;
-    const start = clamp(col - Math.floor(piece.gw / 2), 0, GW - piece.gw);
-    if (!puedeEn(piece, start)) { flashInvalid(); return; }
-
-    let grains = 0;
-    for (const [r, c] of piece.grains) {
-      grid[idx(start + c, r)] = piece.color;
-      grains += 1;
+    const rect = canvas.getBoundingClientRect();
+    const inside = clientX >= rect.left && clientX <= rect.right && clientY >= rect.top - 26 && clientY <= rect.bottom + 30;
+    if (!inside) {
+      drag.column = null;
+      draw();
+      return;
     }
-    score += grains;
-    pieces[selected] = null;
-    const next = pieces.findIndex(Boolean);
-    if (next >= 0) {
-      selected = next;
-    } else {
-      pieces = nuevasPiezas();
-      selected = 0;
-    }
-    settling = true;
-    settle = 0;
-    updateHud();
-    renderDock();
+    const raw = Math.floor(((clientX - rect.left) / rect.width) * P_COLS);
+    drag.column = clamp(raw, 0, P_COLS - piece.shape.w);
+    draw();
   }
 
-  function pasoArena() {
-    let moved = 0;
+  function limpiarDrag(d) {
+    window.removeEventListener('pointermove', moverDrag);
+    window.removeEventListener('pointerup', soltarDrag);
+    window.removeEventListener('pointercancel', cancelarDrag);
+    if (d?.el) d.el.classList.remove('sb3-dragging');
+  }
+
+  function iniciarDrag(e, i, el) {
+    if (over || (state !== 'ready' && state !== 'sand') || !tray[i] || (e.button !== undefined && e.button !== 0)) return;
+    e.preventDefault();
+    drag = { i, el, column: null };
+    el.classList.add('sb3-dragging');
+    window.addEventListener('pointermove', moverDrag, { passive: false });
+    window.addEventListener('pointerup', soltarDrag);
+    window.addEventListener('pointercancel', cancelarDrag);
+    actualizarDrag(e.clientX, e.clientY);
+  }
+
+  function moverDrag(e) {
+    if (!drag) return;
+    e.preventDefault();
+    actualizarDrag(e.clientX, e.clientY);
+  }
+
+  function soltarDrag(e) {
+    if (!drag) return;
+    const d = drag;
+    actualizarDrag(e.clientX, e.clientY);
+    const col = d.column;
+    drag = null;
+    limpiarDrag(d);
+    if (col === null) {
+      renderTray();
+      draw();
+      return;
+    }
+    soltar(d.i, col);
+  }
+
+  function cancelarDrag() {
+    if (!drag) return;
+    const d = drag;
+    drag = null;
+    limpiarDrag(d);
+    renderTray();
+    draw();
+  }
+
+
+
+  function bloqueEntra(ox, oy) {
+    if (!block) return false;
+    for (const [r, c] of block.shape.cells) {
+      const bx = ox + c * SCALE;
+      const by = oy + r * SCALE;
+      for (let dy = 0; dy < SCALE; dy++) {
+        const y = by + dy;
+        if (y >= GH) return false;
+        if (y < 0) continue;
+        for (let dx = 0; dx < SCALE; dx++) {
+          const x = bx + dx;
+          if (x < 0 || x >= GW) return false;
+          if (grid[idx(x, y)]) return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  function disolver() {
+    if (!block) return;
+    const { color, ox, oy, shape } = block;
+    for (const [r, c] of shape.cells) {
+      for (let dy = 0; dy < SCALE; dy++) {
+        const y = oy + r * SCALE + dy;
+        if (y < 0 || y >= GH) continue;
+        for (let dx = 0; dx < SCALE; dx++) {
+          const x = ox + c * SCALE + dx;
+          if (x >= 0 && x < GW) grid[idx(x, y)] = color;
+        }
+      }
+    }
+    block = null;
+    state = 'sand';
+    settles = 0;
+    acc = 0;
+  }
+
+  function stepBlock() {
+    if (!block) return;
+    if (bloqueEntra(block.ox, block.oy + 3)) {
+      block.oy += 3;
+      return;
+    }
+    while (bloqueEntra(block.ox, block.oy + 1)) block.oy += 1;
+    disolver();
+  }
+
+  function soltar(i, col) {
+    const piece = tray[i];
+    if (!piece || over || (state !== 'ready' && state !== 'sand')) return;
+    block = {
+      color: piece.color,
+      shape: piece.shape,
+      ox: col * SCALE,
+      oy: -piece.shape.h * SCALE,
+    };
+    tray[i] = randPiece();
+    state = 'falling';
+    acc = 0;
+    renderTray();
+    draw();
+  }
+
+  function pasoSand() {
+    let moved = false;
     for (let y = GH - 2; y >= 0; y--) {
       const leftToRight = Math.random() < 0.5;
       for (let i = 0; i < GW; i++) {
@@ -227,91 +327,113 @@ export function mountSandBlast(container, { onExit } = {}) {
         const here = idx(x, y);
         const color = grid[here];
         if (!color) continue;
-        const abajo = idx(x, y + 1);
-        if (!grid[abajo]) {
-          grid[abajo] = color;
+        const below = idx(x, y + 1);
+        if (!grid[below]) {
+          grid[below] = color;
           grid[here] = 0;
-          moved += 1;
+          moved = true;
           continue;
         }
-        const first = Math.random() < 0.5 ? 1 : -1;
-        const x1 = x + first;
-        const x2 = x - first;
-        if (x1 >= 0 && x1 < GW && !grid[idx(x1, y + 1)]) {
-          grid[idx(x1, y + 1)] = color;
+        const left = x > 0 && !grid[idx(x - 1, y + 1)] && !grid[idx(x - 1, y)];
+        const right = x < GW - 1 && !grid[idx(x + 1, y + 1)] && !grid[idx(x + 1, y)];
+        let dir = 0;
+        if (left && right) dir = Math.random() < 0.5 ? -1 : 1;
+        else if (left) dir = -1;
+        else if (right) dir = 1;
+        if (dir) {
+          grid[idx(x + dir, y + 1)] = color;
           grid[here] = 0;
-          moved += 1;
-          continue;
-        }
-        if (x2 >= 0 && x2 < GW && !grid[idx(x2, y + 1)]) {
-          grid[idx(x2, y + 1)] = color;
-          grid[here] = 0;
-          moved += 1;
+          moved = true;
         }
       }
     }
     return moved;
   }
 
-  function limpiarLineas() {
-    const filas = [];
-    for (let y = 0; y < GH; y++) {
-      let full = true;
-      let mono = true;
-      let color = 0;
-      for (let x = 0; x < GW; x++) {
-        const v = grid[idx(x, y)];
-        if (!v) { full = false; break; }
-        if (!color) color = v;
-        else if (v !== color) mono = false;
-      }
-      if (full) filas.push({ y, mono });
-    }
-    if (!filas.length) return 0;
+  const visited = new Uint8Array(GW * GH);
+  const queue = new Int32Array(GW * GH);
 
-    let base = 0;
-    filas.forEach(({ y, mono }) => {
-      base += 100 + (mono ? 100 : 0);
-      for (let x = 0; x < GW; x++) {
-        const v = grid[idx(x, y)];
-        if (v && Math.random() < 0.28) {
-          bursts.push({
-            x: x * CW + CW / 2,
-            y: y * CH + CH / 2,
-            vx: rand(-70, 70),
-            vy: rand(-150, -20),
-            r: rand(1.2, 3.2),
-            life: 0.6,
-            max: 0.6,
-            color: COLORS[v - 1],
-          });
+  function resolverLineas() {
+    visited.fill(0);
+    const paraBorrar = [];
+    for (let y = 0; y < GH; y++) {
+      const start = idx(0, y);
+      if (!grid[start] || visited[start]) continue;
+      const color = grid[start];
+      let head = 0;
+      let tail = 0;
+      queue[tail++] = start;
+      visited[start] = 1;
+      let tocaDerecha = false;
+      const comp = [];
+      while (head < tail) {
+        const p = queue[head++];
+        comp.push(p);
+        const x = p % GW;
+        const yy = (p / GW) | 0;
+        if (x === GW - 1) tocaDerecha = true;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            if (!dx && !dy) continue;
+            const nx = x + dx;
+            const ny = yy + dy;
+            if (nx < 0 || nx >= GW || ny < 0 || ny >= GH) continue;
+            const np = idx(nx, ny);
+            if (!visited[np] && grid[np] === color) {
+              visited[np] = 1;
+              queue[tail++] = np;
+            }
+          }
         }
-        grid[idx(x, y)] = 0;
       }
-      flashes.push({ y, t: 0.32, max: 0.32 });
+      if (tocaDerecha) paraBorrar.push(...comp);
+    }
+    if (!paraBorrar.length) return 0;
+
+    combo += 1;
+    const cells = paraBorrar.length;
+    const gained = Math.max(10, Math.round(Math.round((cells / 100) * 10) * (1 + (combo - 1) * 0.5)));
+    let sx = 0;
+    let sy = 0;
+    paraBorrar.forEach((p) => {
+      const x = p % GW;
+      const y = (p / GW) | 0;
+      sx += x;
+      sy += y;
+      if (bursts.length < 800 && Math.random() < 0.22) {
+        bursts.push({
+          x: x * CW + CW / 2,
+          y: y * CH + CH / 2,
+          vx: (Math.random() - 0.5) * 40,
+          vy: -(20 + Math.random() * 50),
+          r: 1 + Math.random() * 1.4,
+          life: 0.55 + Math.random() * 0.3,
+          max: 0.85,
+          color: COLORS[grid[p] - 1],
+        });
+      }
+      grid[p] = 0;
     });
-    comboTimer = 1.1;
-    combo = combo ? combo + 1 : 1;
-    const gained = base * combo;
     score += gained;
+    flashes.push({ y: Math.round(sy / cells), t: 0.3, max: 0.3 });
     labels.push({
       text: `+${formatScore(gained)}`,
-      x: BW / 2,
-      y: (filas[0].y + 0.5) * CH,
-      life: 0.9,
-      max: 0.9,
+      x: (sx / cells) * CW,
+      y: (sy / cells) * CH,
+      life: 0.95,
+      max: 0.95,
     });
-    if (combo > 1) {
+    if (combo >= 2) {
       labels.push({
-        text: `x${combo}`,
+        text: `COMBO x${combo}`,
         x: BW / 2,
-        y: (filas[0].y + 0.5) * CH - 20,
-        life: 0.9,
-        max: 0.9,
+        y: BH * 0.28,
+        life: 1.15,
+        max: 1.15,
       });
     }
     updateHud();
-    return filas.length;
+    return cells;
   }
 
   function actualizarEfectos(dt) {
@@ -319,40 +441,38 @@ export function mountSandBlast(container, { onExit } = {}) {
     flashes = flashes.filter((f) => f.t > 0);
     bursts.forEach((p) => {
       p.life -= dt;
-      p.vy += 520 * dt;
+      p.vy += 140 * dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
     });
     bursts = bursts.filter((p) => p.life > 0);
-    labels.forEach((l) => { l.life -= dt; l.y -= 22 * dt; });
+    labels.forEach((l) => { l.life -= dt; l.y -= 16 * dt; });
     labels = labels.filter((l) => l.life > 0);
-    comboTimer = Math.max(0, comboTimer - dt);
-    if (!comboTimer) combo = 0;
   }
 
-  function filaSuperior() {
-    for (let y = 0; y < GH; y++) {
-      for (let x = 0; x < GW; x++) if (grid[idx(x, y)]) return y;
+  function finTurno() {
+    for (let y = 0; y < DANGER_ROW; y++) {
+      for (let x = 0; x < GW; x++) {
+        if (grid[idx(x, y)]) { terminar(); return; }
+      }
     }
-    return GH;
-  }
-
-  function comprobarFin() {
-    if (filaSuperior() < DANGER_ROW) { terminar(); return; }
-    if (!pieces.filter(Boolean).some(puedeEnAlgunLado)) terminar();
+    combo = 0;
+    state = 'ready';
   }
 
   function terminar() {
     if (over) return;
     over = true;
+    state = 'over';
     running = false;
     cancelAnimationFrame(raf);
+    if (drag) cancelarDrag();
     const nuevo = saveRecord('sandblast', score);
     best = getRecord('sandblast');
     updateHud();
     overlay.innerHTML = `
       <div class="arcade-over-emoji" aria-hidden="true">🏖️</div>
-      <h4>La arena llegó arriba</h4>
+      <h4>Game Over</h4>
       <p class="arcade-over-score">${formatScore(score)} puntos</p>
       <p class="arcade-over-sub">${nuevo ? '¡Nuevo récord!' : 'Récord: ' + formatScore(best)}</p>
       <button type="button" class="btn-big" data-arcade="restart">Jugar de nuevo</button>
@@ -360,7 +480,7 @@ export function mountSandBlast(container, { onExit } = {}) {
     overlay.classList.remove('hidden');
     overlay.querySelector('[data-arcade="restart"]').addEventListener('click', reiniciar);
     overlay.querySelector('[data-arcade="exit"]').addEventListener('click', () => onExit?.());
-    renderDock();
+    renderTray();
     draw();
   }
 
@@ -370,11 +490,11 @@ export function mountSandBlast(container, { onExit } = {}) {
       for (let x = 0; x < GW; x++) {
         const v = grid[idx(x, y)];
         if (!v) continue;
-        const shade = SHADES[v - 1][(x * 31 + y * 57 + x * y * 7) & 3];
+        const rgb = esOscuro(x, y) ? DARKPAL[v - 1] : PALETTE[v - 1];
         const o = (y * GW + x) * 4;
-        pixels[o] = shade[0];
-        pixels[o + 1] = shade[1];
-        pixels[o + 2] = shade[2];
+        pixels[o] = rgb[0];
+        pixels[o + 1] = rgb[1];
+        pixels[o + 2] = rgb[2];
         pixels[o + 3] = 255;
       }
     }
@@ -383,33 +503,40 @@ export function mountSandBlast(container, { onExit } = {}) {
     ctx.drawImage(sandCanvas, 0, 0, GW, GH, 0, 0, BW, BH);
   }
 
-  function dibujarFantasma() {
-    const piece = pieces[selected];
-    if (!piece) return;
-    const start = inicioPara(piece);
-    const ok = puedeEn(piece, start);
-    ctx.globalAlpha = ok ? 0.34 : 0.22;
-    ctx.fillStyle = ok ? COLORS[piece.color - 1] : '#a33b3b';
-    for (const [r, c] of piece.grains) {
-      ctx.fillRect((start + c) * CW + 0.4, r * CH + 0.4, CW - 0.8, CH - 0.8);
+  function dibujarPieza(color, shape, ox, oy, alpha = 1, outline = false) {
+    ctx.globalAlpha = alpha;
+    for (const [r, c] of shape.cells) {
+      const x = (ox + c * SCALE) * CW;
+      const y = (oy + r * SCALE) * CH;
+      const w = SCALE * CW;
+      const h = SCALE * CH;
+      ctx.fillStyle = COLORS[color - 1];
+      ctx.fillRect(x + 0.5, y + 0.5, w - 1, h - 1);
+      ctx.globalAlpha = alpha * 0.38;
+      ctx.fillStyle = DARKPAL[color - 1];
+      ctx.fillRect(x + 0.5, y + h * 0.76, w - 1, h * 0.24 - 0.5);
+      ctx.globalAlpha = alpha;
+    }
+    if (outline) {
+      ctx.globalAlpha = 0.85;
+      ctx.strokeStyle = 'rgba(255,255,255,.7)';
+      ctx.lineWidth = 1.4;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(
+        ox * CW + 0.5,
+        oy * CH + 0.5,
+        shape.w * SCALE * CW - 1,
+        shape.h * SCALE * CH - 1,
+      );
+      ctx.setLineDash([]);
     }
     ctx.globalAlpha = 1;
-
-    ctx.save();
-    ctx.setLineDash([3, 9]);
-    ctx.strokeStyle = 'rgba(109,31,38,.14)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo((start + piece.gw / 2) * CW, 0);
-    ctx.lineTo((start + piece.gw / 2) * CW, BH);
-    ctx.stroke();
-    ctx.restore();
   }
 
   function draw() {
-    const bg = ctx.createLinearGradient(0, 0, 0, BH);
-    bg.addColorStop(0, '#fffaf2');
-    bg.addColorStop(1, '#f1dfc8');
+    const bg = ctx.createRadialGradient(BW / 2, 0, 20, BW / 2, BH / 2, BH);
+    bg.addColorStop(0, '#101d33');
+    bg.addColorStop(1, '#060c16');
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, BW, BH);
 
@@ -418,7 +545,7 @@ export function mountSandBlast(container, { onExit } = {}) {
     const dy = DANGER_ROW * CH;
     ctx.save();
     ctx.setLineDash([5, 7]);
-    ctx.strokeStyle = 'rgba(163,59,59,.32)';
+    ctx.strokeStyle = 'rgba(248,113,113,.42)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(0, dy);
@@ -426,10 +553,27 @@ export function mountSandBlast(container, { onExit } = {}) {
     ctx.stroke();
     ctx.restore();
 
-    if (!over) dibujarFantasma();
+    if (block) dibujarPieza(block.color, block.shape, block.ox, block.oy);
+
+    if (drag && drag.column !== null) {
+      const piece = tray[drag.i];
+      if (piece) {
+        const ox = drag.column * SCALE;
+        ctx.save();
+        ctx.setLineDash([3, 8]);
+        ctx.strokeStyle = 'rgba(255,255,255,.18)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo((ox + piece.shape.w * SCALE / 2) * CW, 0);
+        ctx.lineTo((ox + piece.shape.w * SCALE / 2) * CW, BH);
+        ctx.stroke();
+        ctx.restore();
+        dibujarPieza(piece.color, piece.shape, ox, 0, 0.35, true);
+      }
+    }
 
     flashes.forEach((f) => {
-      ctx.fillStyle = `rgba(255,252,240,${0.6 * (f.t / f.max)})`;
+      ctx.fillStyle = `rgba(255,255,255,${0.55 * (f.t / f.max)})`;
       ctx.fillRect(0, f.y * CH, BW, CH);
     });
 
@@ -444,8 +588,8 @@ export function mountSandBlast(container, { onExit } = {}) {
 
     labels.forEach((l) => {
       ctx.globalAlpha = Math.min(1, l.life / l.max + 0.15);
-      ctx.fillStyle = '#6d1f26';
-      ctx.font = '600 22px "Cormorant Garamond", serif';
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = '700 22px "Cormorant Garamond", serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(l.text, l.x, l.y);
@@ -460,22 +604,29 @@ export function mountSandBlast(container, { onExit } = {}) {
     last = ts;
 
     if (!over) {
-      simAcc += dt;
-      let moved = 0;
+      acc += dt * 1000;
       let steps = 0;
-      while (simAcc >= SIM_STEP && steps < 4) {
-        simAcc -= SIM_STEP;
-        moved += pasoArena();
+      while (acc >= STEP_MS && steps < 6 && !over) {
+        acc -= STEP_MS;
         steps += 1;
-      }
-      const limpiadas = limpiarLineas();
-      if (moved || limpiadas) settle = 0;
-      else settle += dt;
-
-      if (settling && settle > 0.55) {
-        settling = false;
-        settle = 0;
-        comprobarFin();
+        if (state === 'falling') {
+          stepBlock();
+          if (!block && state === 'sand') {
+            settles = 0;
+            acc = 0;
+          }
+        } else if (state === 'sand') {
+          const moved = pasoSand();
+          if (moved) settles = 0;
+          else settles += STEP_MS;
+          if (settles >= 60) {
+            const cleared = resolverLineas();
+            if (cleared) settles = 0;
+            else finTurno();
+          }
+        } else {
+          break;
+        }
       }
       actualizarEfectos(dt);
     }
@@ -487,100 +638,72 @@ export function mountSandBlast(container, { onExit } = {}) {
   function iniciar() {
     running = true;
     last = 0;
-    simAcc = 0;
+    acc = 0;
     raf = requestAnimationFrame(loop);
   }
 
   function reiniciar() {
     cancelAnimationFrame(raf);
     clearTimeout(invalidTimer);
+    if (drag) {
+      const d = drag;
+      drag = null;
+      limpiarDrag(d);
+    }
     grid = new Uint8Array(GW * GH);
-    pieces = nuevasPiezas();
-    selected = 0;
+    block = null;
+    state = 'ready';
     score = 0;
+    combo = 0;
+    settles = 0;
+    acc = 0;
     over = false;
-    settle = 0;
-    settling = false;
-    simAcc = 0;
-    hoverCol = Math.floor(GW / 2);
     flashes = [];
     bursts = [];
     labels = [];
-    combo = 0;
-    comboTimer = 0;
-    pointerActive = false;
+    refillTray();
     overlay.classList.add('hidden');
     overlay.innerHTML = '';
-    stage.classList.remove('sb2-invalid', 'sb2-aiming');
+    stage.classList.remove('sb3-invalid');
     updateHud();
-    renderDock();
+    renderTray();
+    draw();
     iniciar();
   }
 
-  function columnaDeEvento(e) {
-    const r = canvas.getBoundingClientRect();
-    if (!r.width) return hoverCol;
-    return clamp(Math.floor(((e.clientX - r.left) / r.width) * GW), 0, GW - 1);
+  async function toggleFullscreen() {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else if (card?.requestFullscreen) {
+        await card.requestFullscreen();
+      }
+    } catch (e) {}
   }
 
-  function onMove(e) {
-    hoverCol = columnaDeEvento(e);
-  }
+  const onClose = () => onExit?.();
+  fsBtn.addEventListener('click', toggleFullscreen);
+  closeBtn.addEventListener('click', onClose);
 
-  function onDown(e) {
-    if (e.button !== undefined && e.button !== 0) return;
-    e.preventDefault();
-    pointerActive = true;
-    hoverCol = columnaDeEvento(e);
-    stage.focus({ preventScroll: true });
-    stage.classList.add('sb2-aiming');
-    try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
-  }
-
-  function onUp(e) {
-    if (!pointerActive) return;
-    pointerActive = false;
-    stage.classList.remove('sb2-aiming');
-    try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
-    hoverCol = columnaDeEvento(e);
-    soltar(hoverCol);
-  }
-
-  function onCancel(e) {
-    pointerActive = false;
-    stage.classList.remove('sb2-aiming');
-    try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
-  }
-
-  function onKey(e) {
-    if (e.key === 'ArrowLeft' || e.key === 'a') { hoverCol = clamp(hoverCol - 2, 0, GW - 1); e.preventDefault(); }
-    else if (e.key === 'ArrowRight' || e.key === 'd') { hoverCol = clamp(hoverCol + 2, 0, GW - 1); e.preventDefault(); }
-    else if (e.key === ' ' || e.key === 'Enter') { soltar(hoverCol); e.preventDefault(); }
-  }
-
-  canvas.addEventListener('pointermove', onMove);
-  canvas.addEventListener('pointerdown', onDown);
-  canvas.addEventListener('pointerup', onUp);
-  canvas.addEventListener('pointercancel', onCancel);
-  stage.addEventListener('keydown', onKey);
-  restartBtn.addEventListener('click', reiniciar);
-
+  refillTray();
   updateHud();
-  renderDock();
+  renderTray();
+  draw();
   iniciar();
 
   return () => {
     running = false;
-    pointerActive = false;
     cancelAnimationFrame(raf);
     clearTimeout(invalidTimer);
+    if (drag) {
+      const d = drag;
+      drag = null;
+      limpiarDrag(d);
+    }
     saveRecord('sandblast', score);
-    canvas.removeEventListener('pointermove', onMove);
-    canvas.removeEventListener('pointerdown', onDown);
-    canvas.removeEventListener('pointerup', onUp);
-    canvas.removeEventListener('pointercancel', onCancel);
-    stage.removeEventListener('keydown', onKey);
-    restartBtn.removeEventListener('click', reiniciar);
+    if (document.fullscreenElement === card) document.exitFullscreen?.().catch(() => {});
+    fsBtn.removeEventListener('click', toggleFullscreen);
+    closeBtn.removeEventListener('click', onClose);
     container.innerHTML = '';
   };
 }
