@@ -37,7 +37,7 @@ export function mountWatermelon(container, { onExit } = {}) {
         <canvas class="wm-canvas"></canvas>
         <div class="arcade-overlay hidden"></div>
       </div>
-      <p class="arcade-hint">Movés el dedo o el mouse y tocás para soltar. Uní dos frutas iguales para hacer una más grande.</p>
+      <p class="arcade-hint">Mantené apretado y arrastrá para apuntar; soltá para dejar caer la fruta. Uní dos iguales para hacer una más grande.</p>
       <div class="arcade-actions"><button type="button" class="btn-big ghost wm-restart">Reiniciar</button></div>
     </div>`;
 
@@ -66,6 +66,7 @@ export function mountWatermelon(container, { onExit } = {}) {
   let cooldown = 0;
   let raf = 0;
   let last = 0;
+  let pointerActive = false;
 
   function updateHud() {
     scoreEl.textContent = formatScore(score);
@@ -349,6 +350,8 @@ export function mountWatermelon(container, { onExit } = {}) {
     score = 0;
     over = false;
     cooldown = 0;
+    pointerActive = false;
+    stage.classList.remove('wm-aiming');
     overlay.classList.add('hidden');
     overlay.innerHTML = '';
     updateHud();
@@ -364,9 +367,28 @@ export function mountWatermelon(container, { onExit } = {}) {
   function onMove(e) { apuntar(e); }
 
   function onDown(e) {
+    if (e.button !== undefined && e.button !== 0) return;
+    e.preventDefault();
+    pointerActive = true;
     apuntar(e);
     stage.focus({ preventScroll: true });
+    stage.classList.add('wm-aiming');
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+  }
+
+  function onUp(e) {
+    if (!pointerActive) return;
+    pointerActive = false;
+    stage.classList.remove('wm-aiming');
+    try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
+    apuntar(e);
     soltar();
+  }
+
+  function onCancel(e) {
+    pointerActive = false;
+    stage.classList.remove('wm-aiming');
+    try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
   }
 
   function onKey(e) {
@@ -377,6 +399,8 @@ export function mountWatermelon(container, { onExit } = {}) {
 
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerdown', onDown);
+  canvas.addEventListener('pointerup', onUp);
+  canvas.addEventListener('pointercancel', onCancel);
   stage.addEventListener('keydown', onKey);
   restartBtn.addEventListener('click', reiniciar);
 
@@ -385,10 +409,13 @@ export function mountWatermelon(container, { onExit } = {}) {
 
   return () => {
     running = false;
+    pointerActive = false;
     cancelAnimationFrame(raf);
     saveRecord('watermelon', score);
     canvas.removeEventListener('pointermove', onMove);
     canvas.removeEventListener('pointerdown', onDown);
+    canvas.removeEventListener('pointerup', onUp);
+    canvas.removeEventListener('pointercancel', onCancel);
     stage.removeEventListener('keydown', onKey);
     restartBtn.removeEventListener('click', reiniciar);
     container.innerHTML = '';

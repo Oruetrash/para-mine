@@ -555,6 +555,7 @@ html, body {
 }
 .sb2-stage:focus-visible { box-shadow: 0 0 0 3px rgba(109,31,38,.25); }
 .sb2-canvas { display: block; width: 100%; height: auto; touch-action: none; cursor: crosshair; }
+.sb2-stage.sb2-aiming .sb2-canvas { cursor: grabbing; }
 .sb2-dock { display: flex; justify-content: center; gap: 9px; margin-top: 12px; }
 .sb2-piece {
   width: 74px; height: 74px; display: flex; align-items: center; justify-content: center;
@@ -578,6 +579,7 @@ html, body {
 }
 .wm-stage:focus-visible { box-shadow: 0 0 0 3px rgba(109,31,38,.25); }
 .wm-canvas { display: block; width: 100%; height: auto; touch-action: none; cursor: crosshair; }
+.wm-stage.wm-aiming .wm-canvas { cursor: grabbing; }
 
 /* ---------- Canciones agregadas ---------- */
 .songs-tabs { display: flex; gap: 8px; margin: 14px 0; }

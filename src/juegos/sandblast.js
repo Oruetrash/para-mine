@@ -82,7 +82,7 @@ export function mountSandBlast(container, { onExit } = {}) {
         <canvas class="sb2-canvas"></canvas>
       </div>
       <div class="sb2-dock" aria-label="Piezas disponibles"></div>
-      <p class="arcade-hint">Elegí una pieza y tocá una columna. La arena se derrumba sola; completá una línea para reventarla.</p>
+      <p class="arcade-hint">Elegí una pieza, mantené apretado para apuntar y soltá para dejar caer la arena. Completá una línea para reventarla.</p>
       <div class="arcade-actions"><button type="button" class="btn-big ghost sb2-restart">Reiniciar</button></div>
       <div class="arcade-overlay hidden"></div>
     </div>`;
@@ -127,6 +127,7 @@ export function mountSandBlast(container, { onExit } = {}) {
   let combo = 0;
   let comboTimer = 0;
   let invalidTimer = 0;
+  let pointerActive = false;
 
   function idx(x, y) { return y * GW + x; }
 
@@ -507,9 +508,10 @@ export function mountSandBlast(container, { onExit } = {}) {
     labels = [];
     combo = 0;
     comboTimer = 0;
+    pointerActive = false;
     overlay.classList.add('hidden');
     overlay.innerHTML = '';
-    stage.classList.remove('sb2-invalid');
+    stage.classList.remove('sb2-invalid', 'sb2-aiming');
     updateHud();
     renderDock();
     iniciar();
@@ -526,10 +528,28 @@ export function mountSandBlast(container, { onExit } = {}) {
   }
 
   function onDown(e) {
+    if (e.button !== undefined && e.button !== 0) return;
     e.preventDefault();
+    pointerActive = true;
     hoverCol = columnaDeEvento(e);
     stage.focus({ preventScroll: true });
+    stage.classList.add('sb2-aiming');
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+  }
+
+  function onUp(e) {
+    if (!pointerActive) return;
+    pointerActive = false;
+    stage.classList.remove('sb2-aiming');
+    try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
+    hoverCol = columnaDeEvento(e);
     soltar(hoverCol);
+  }
+
+  function onCancel(e) {
+    pointerActive = false;
+    stage.classList.remove('sb2-aiming');
+    try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
   }
 
   function onKey(e) {
@@ -540,6 +560,8 @@ export function mountSandBlast(container, { onExit } = {}) {
 
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerdown', onDown);
+  canvas.addEventListener('pointerup', onUp);
+  canvas.addEventListener('pointercancel', onCancel);
   stage.addEventListener('keydown', onKey);
   restartBtn.addEventListener('click', reiniciar);
 
@@ -549,11 +571,14 @@ export function mountSandBlast(container, { onExit } = {}) {
 
   return () => {
     running = false;
+    pointerActive = false;
     cancelAnimationFrame(raf);
     clearTimeout(invalidTimer);
     saveRecord('sandblast', score);
     canvas.removeEventListener('pointermove', onMove);
     canvas.removeEventListener('pointerdown', onDown);
+    canvas.removeEventListener('pointerup', onUp);
+    canvas.removeEventListener('pointercancel', onCancel);
     stage.removeEventListener('keydown', onKey);
     restartBtn.removeEventListener('click', reiniciar);
     container.innerHTML = '';
