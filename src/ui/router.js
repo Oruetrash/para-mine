@@ -34,6 +34,7 @@ export async function go(view) {
 
 export function renderMasMenu() {
   const items = [
+    { view: 'juegos', icono: '🎮', texto: 'Juegos' },
     { view: 'canciones', icono: '🎵', texto: 'Música' },
     { view: 'razones', icono: '💌', texto: 'Razones' },
     { view: 'arte', icono: '🎨', texto: 'Su arte' },

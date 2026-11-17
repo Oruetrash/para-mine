@@ -61,6 +61,29 @@ export const CONFIG = {
     },
   ],
 
+  // Juegos favoritos de Miñe: se juegan acá y también se pueden abrir en la tienda.
+  // Si juega otra versión, reemplazá los links por los de su app.
+  JUEGOS: [
+    {
+      id: 'sandblast',
+      nombre: 'Sand Blast',
+      emoji: '🏖️',
+      tag: 'Su vicio relajante',
+      descripcion: 'Bloques de arena, colores y combos. Ideal para desconectar un rato.',
+      android: 'https://play.google.com/store/apps/details?id=com.inspiredsquare.sand.blast',
+      ios: 'https://apps.apple.com/app/id6746120185',
+    },
+    {
+      id: 'watermelon',
+      nombre: 'Watermelon Maker',
+      emoji: '🍉',
+      tag: 'Dulce y adictivo',
+      descripcion: 'Frutitas que se fusionan hasta llegar a la sandía gigante.',
+      android: 'https://play.google.com/store/apps/details?id=com.mobirix.ldwm',
+      ios: 'https://apps.apple.com/app/id6479474537',
+    },
+  ],
+
   // Canciones (IDs de Spotify)
   CANCIONES: {
     marcaron: {

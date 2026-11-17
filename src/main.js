@@ -22,6 +22,7 @@ import { initEnvios } from './features/envios.js';
 import { initMusica } from './features/musica.js';
 import { initEntries } from './features/entries.js';
 import { initAdviento } from './features/adviento.js';
+import { initJuegos } from './features/juegos.js';
 import { initCreador } from './features/creador.js';
 import { initHistorial } from './features/historial.js';
 
@@ -87,6 +88,7 @@ async function bootstrap() {
   initMusica();
   initEntries();
   initAdviento();
+  initJuegos();
   initCreador();
   initHistorial();
   initLogin(showApp);

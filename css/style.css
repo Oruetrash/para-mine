@@ -360,6 +360,7 @@ html, body {
   .arte-grid { grid-template-columns: repeat(3, 1fr); }
   .hoy-history { grid-template-columns: repeat(14, 1fr); }
   .cal-grid { grid-template-columns: repeat(4, 1fr); }
+  .juegos-grid { grid-template-columns: 1fr 1fr; align-items: start; }
 }
 
 /* ---------- Calendario de adviento ---------- */
@@ -461,6 +462,131 @@ html, body {
 .adv-row:last-child { border-bottom: none; }
 .adv-row .adv-dia { font-weight: 600; color: var(--rojo); font-family: 'Cormorant Garamond', serif; font-size: 16px; }
 .adv-row .adv-resumen { flex: 1; color: var(--marron-claro); font-size: 12.5px; }
+
+/* ---------- Apartado de juegos ---------- */
+.juegos-grid { display: grid; gap: 14px; }
+.juego-card {
+  position: relative; overflow: hidden; border-radius: 22px; padding: 20px;
+  box-shadow: var(--sombra);
+}
+.juego-card::before {
+  content: ''; position: absolute; width: 170px; height: 170px; border-radius: 50%;
+  right: -55px; top: -70px; background: rgba(255,255,255,.4); pointer-events: none;
+}
+.juego-card::after {
+  content: ''; position: absolute; width: 100px; height: 100px; border-radius: 50%;
+  right: 18px; bottom: -52px; background: rgba(255,255,255,.24); pointer-events: none;
+}
+.juego-card > * { position: relative; z-index: 1; }
+.juego-sand { background: linear-gradient(145deg, #fbefd8, #efd5a8); }
+.juego-watermelon { background: linear-gradient(145deg, #e8f5e3, #cfe7c9); }
+.juego-top { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+.juego-emoji {
+  width: 64px; height: 64px; border-radius: 50%; flex: none;
+  display: flex; align-items: center; justify-content: center; font-size: 34px;
+  background: rgba(255,255,255,.7); box-shadow: inset 0 0 0 1.5px rgba(194,154,91,.35);
+}
+.juego-tag { display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: 1.4px; font-weight: 600; color: var(--marron-claro); margin-bottom: 2px; }
+.juego-card h3 { font-family: 'Cormorant Garamond', serif; font-size: 26px; line-height: 1.05; color: var(--rojo); }
+.juego-desc { font-size: 14.5px; line-height: 1.55; color: #5c4435; margin-bottom: 10px; }
+.juego-record { font-size: 12.5px; color: var(--marron-claro); font-weight: 500; margin-bottom: 10px; }
+.juego-play {
+  display: flex; align-items: center; justify-content: center; width: 100%;
+  padding: 13px 18px; border: none; border-radius: 14px; cursor: pointer;
+  background: linear-gradient(135deg, var(--rojo), var(--rojo2)); color: #fff;
+  font-family: inherit; font-size: 15px; font-weight: 600; box-shadow: var(--sombra);
+  letter-spacing: .3px;
+}
+.juego-play:active { transform: scale(.98); }
+.juego-stores { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.juego-stores-label { flex-basis: 100%; font-size: 10.5px; color: var(--marron-claro); text-transform: uppercase; letter-spacing: .8px; font-weight: 600; }
+.juego-link {
+  display: inline-flex; align-items: center; gap: 5px; padding: 7px 10px;
+  border-radius: 10px; border: 1.5px solid rgba(109,31,38,.2); background: rgba(255,255,255,.42);
+  color: var(--rojo); text-decoration: none; font-size: 12px; font-weight: 600;
+}
+.juego-link:active { transform: scale(.97); }
+.juego-bonus {
+  width: 100%; margin-top: 16px; display: flex; align-items: center; gap: 12px;
+  text-align: left; background: var(--crema-claro); border: 1.5px dashed var(--dorado);
+  border-radius: 18px; padding: 16px; color: var(--texto); font-family: inherit; cursor: pointer;
+}
+.juego-bonus-emoji { font-size: 26px; flex: none; }
+.juego-bonus span:nth-child(2) { flex: 1; font-size: 13.5px; line-height: 1.45; color: var(--marron-claro); }
+.juego-bonus strong { display: block; color: var(--rojo); font-family: 'Cormorant Garamond', serif; font-size: 17px; }
+.juego-bonus-arrow { color: var(--rojo); font-size: 20px; }
+.juegos-foot { text-align: center; color: var(--marron-claro); font-size: 12.5px; margin-top: 14px; }
+
+/* ---------- Arcade: juegos jugables ---------- */
+.arcade-card { max-width: 460px; padding: 16px 16px 18px; position: relative; }
+.arcade-card .mas-close { z-index: 10; }
+.arcade-mount { width: 100%; }
+.arcade-game { position: relative; }
+.arcade-title {
+  font-family: 'Cormorant Garamond', serif; font-weight: 600; color: var(--rojo);
+  font-size: 24px; text-align: center; margin: 2px 30px 8px;
+}
+.arcade-hud {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--marron-claro); margin: 0 2px 10px;
+}
+.arcade-hud b { color: var(--rojo); font-weight: 700; }
+.wm-next b { font-size: 16px; }
+.arcade-hint { text-align: center; font-size: 12px; line-height: 1.45; color: var(--marron-claro); margin: 10px 2px 0; }
+.arcade-actions { margin-top: 10px; }
+.arcade-actions .btn-big { width: 100%; }
+.arcade-overlay {
+  position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 6px; padding: 22px;
+  text-align: center; background: rgba(253,248,241,.96); border-radius: 18px;
+}
+.arcade-over-emoji { font-size: 38px; }
+.arcade-overlay h4 { font-family: 'Cormorant Garamond', serif; color: var(--rojo); font-size: 25px; }
+.arcade-over-score { font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 700; color: var(--rojo); line-height: 1.1; }
+.arcade-over-sub { font-size: 13px; color: var(--marron-claro); margin-bottom: 8px; }
+.arcade-overlay .btn-big { width: 100%; max-width: 240px; }
+
+/* Sand Blast */
+.sb-board {
+  display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; padding: 6px;
+  max-width: 360px; margin: 0 auto; border-radius: 16px; background: #e6d2b8;
+  touch-action: manipulation; user-select: none; -webkit-user-select: none;
+}
+.sb-cell {
+  aspect-ratio: 1; border-radius: 5px; background: #f8efe2;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
+}
+.sb-cell.filled {
+  background: var(--c);
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,.12), inset 0 2px 0 rgba(255,255,255,.25);
+}
+.sb-cell.sb-hover { outline: 2px solid rgba(109,31,38,.35); outline-offset: -2px; }
+.sb-cell.sb-hover-bad { outline: 2px solid rgba(163,59,59,.65); outline-offset: -2px; }
+.sb-dock { display: flex; justify-content: center; gap: 9px; margin-top: 12px; }
+.sb-piece {
+  width: 74px; height: 74px; display: flex; align-items: center; justify-content: center;
+  border-radius: 14px; border: 1.5px solid #e0cbb4; background: #fffaf3; cursor: pointer; padding: 4px;
+}
+.sb-piece.active { border-color: var(--rojo); box-shadow: 0 0 0 2px rgba(109,31,38,.12); background: #fff; }
+.sb-piece:disabled { cursor: default; }
+.sb-piece.empty { opacity: .45; border-style: dashed; }
+.sb-piece-empty { color: #3f7a4e; font-size: 22px; font-weight: 700; }
+.sb-piece-preview { display: grid; gap: 2px; }
+.sb-piece-cell { width: 15px; height: 15px; border-radius: 3px; }
+.sb-piece-cell.on { background: var(--c); box-shadow: inset 0 -1px 0 rgba(0,0,0,.12); }
+.sb-clearing { animation: sbBlast .35s ease; }
+@keyframes sbBlast { 40% { transform: scale(.985); filter: brightness(1.08); } }
+.sb-invalid { animation: sbShake .3s ease; }
+@keyframes sbShake { 25% { transform: translateX(-3px); } 50% { transform: translateX(3px); } 75% { transform: translateX(-1px); } }
+
+/* Watermelon Maker */
+.wm-stage {
+  position: relative; width: 100%; max-width: 360px; margin: 0 auto; border-radius: 18px;
+  overflow: hidden; box-shadow: inset 0 0 0 1px rgba(109,31,38,.12);
+  touch-action: none; outline: none;
+}
+.wm-stage:focus-visible { box-shadow: 0 0 0 3px rgba(109,31,38,.25); }
+.wm-canvas { display: block; width: 100%; height: auto; touch-action: none; cursor: crosshair; }
 
 /* ---------- Canciones agregadas ---------- */
 .songs-tabs { display: flex; gap: 8px; margin: 14px 0; }

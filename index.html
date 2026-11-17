@@ -68,6 +68,7 @@
         <button class="cta" data-go="historia">Ver nuestra historia</button>
         <button class="cta cta-alt" data-go="hoy">El quiz y mensaje de hoy 💌</button>
         <button class="cta cta-alt" data-go="cofre">Hay algo para vos 🎁</button>
+        <button class="cta cta-alt" data-go="juegos">Tus juegos favoritos 🎮</button>
       </div>
     </section>
 
@@ -119,6 +120,13 @@
         <div id="calendario"></div>
       </div>
       <div id="cofre-reveal" class="hidden"></div>
+    </section>
+
+    <!-- JUEGOS -->
+    <section id="view-juegos" class="view">
+      <h2 class="section-title script">Juegos</h2>
+      <p class="section-sub">Tus favoritos, cerquita. Un rato para vos.</p>
+      <div id="juegos"></div>
     </section>
 
     <!-- CANCIONES -->
@@ -318,6 +326,14 @@
         <button class="btn-ghost" id="adviento-cancel">Cancelar</button>
         <button class="btn-solid" id="adviento-save">Guardar</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal juegos -->
+  <div id="game-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card arcade-card">
+      <button class="mas-close" id="game-close" aria-label="Cerrar juego">✕</button>
+      <div id="game-content"></div>
     </div>
   </div>
 
